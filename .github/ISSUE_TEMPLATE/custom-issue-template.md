@@ -1,26 +1,49 @@
----
-name: Custom Issue Template
-about: Template to use when creating issues
-title: ''
-labels: ''
-assignees: ''
+name: New Task
+description: Create a structured task with user stories and acceptance criteria.
+title: "[Task]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: input
+    id: task_title
+    attributes:
+      label: Title
+      description: Provide a concise title for this task.
+      placeholder: "e.g., Implement OAuth2 Authentication"
+    validations:
+      required: true
 
----
+  - type: textarea
+    id: task_definition
+    attributes:
+      label: Task Definition
+      description: Provide a clear description of the task, including specifics about what packages/software you want used.
+      placeholder: |
+        - What needs to be built or changed?
+        - Specific libraries, packages, or software versions to use?
+        - Any architectural constraints?
+    validations:
+      required: true
 
-New task:
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User Story
+      description: Define the value this task brings from a user perspective.
+      value: |
+        **As a** [type of user],
+        **I want to be able to** [perform an action],
+        **So that I can** [achieve a goal/benefit].
+    validations:
+      required: true
 
-Title:
-
-Task Definition:
-
-(Provide a clear description of the task, including specifics about what packages/software you want used)
-
-User Story:
-
-As a ____,
-
-I want to be able to ____,
-
-So that I can _____
-
-Acceptance Criteria:
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Outline the specific requirements that must be met for this task to be considered complete.
+      placeholder: |
+        - [ ] Criterion 1 (e.g., Code coverage is above 80%)
+        - [ ] Criterion 2 (e.g., API returns a 200 OK status on success)
+        - [ ] Criterion 3 (e.g., Documentation updated)
+    validations:
+      required: true
