@@ -3,15 +3,6 @@ description: Create a structured task with user stories and acceptance criteria.
 title: "[Task]: "
 labels: ["enhancement", "triage"]
 body:
-  - type: input
-    id: task_title
-    attributes:
-      label: Title
-      description: Provide a concise title for this task.
-      placeholder: "e.g., Implement OAuth2 Authentication"
-    validations:
-      required: true
-
   - type: textarea
     id: task_definition
     attributes:
