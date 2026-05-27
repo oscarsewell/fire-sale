@@ -96,7 +96,7 @@ jobs:
           errors = 0
 
           try:
-              report = json.load(Path("qa-pytest-report.json").read_text())
+              report = json.loads(Path("qa-pytest-report.json").read_text())
               summary = report.get("summary", {})
               failed_tests = summary.get("failed", 0)
               errors = summary.get("error", 0) + summary.get("errors", 0)
