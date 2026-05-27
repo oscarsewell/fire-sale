@@ -44,16 +44,16 @@ def calculate_discount_percentage(original_price: float, current_price: float) -
     """Calculates the discount percentage."""
 
 
+def convert_to_datetime(scraped_at: str) -> int:
+    """Converts the scraped_at string to a timestamp."""
+
+
 def valid_url(product_url: str) -> bool:
     """Tests if the product URL is valid."""
 
 
 def valid_discount_percentage(discount_percentage: float) -> bool:
     """Tests if the discount percentage is valid."""
-
-
-def valid_scraped_at(scraped_at: str) -> bool:
-    """Tests if the scraped_at timestamp is valid."""
 
 
 if __name__ == "__main__":
