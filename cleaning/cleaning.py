@@ -92,21 +92,38 @@ def normalize_product_prices(product: dict) -> dict:
         raise ValueError(
             "Product must contain 'original_price' and 'current_price' fields.")
 
-    currency_symbol, original_price = parse_price(product["original_price"])
-    _, current_price = parse_price(product["current_price"])
+    original_currency_symbol, original_price = parse_price(
+        product["original_price"])
+    current_currency_symbol, current_price = parse_price(
+        product["current_price"])
 
-    if currency_symbol is None:
-        raise ValueError("Currency symbol could not be determined.")
+    if not original_currency_symbol or not current_currency_symbol:
+        raise ValueError("Both prices must contain a valid currency symbol.")
+
+    if original_currency_symbol != current_currency_symbol:
+        raise ValueError("Currency symbols do not match.")
 
     product["original_price"] = original_price
     product["current_price"] = current_price
-    product["currency"] = currency_symbol
+    product["currency"] = original_currency_symbol
 
     return product
 
 
 def calculate_discount_percentage(original_price: float, current_price: float) -> float:
     """Calculates the discount percentage."""
+    if not isinstance(original_price, (int, float)) or not isinstance(current_price, (int, float)):
+        raise TypeError("Prices must be numeric.")
+
+    if original_price <= 0:
+        raise ValueError("Original price must be greater than zero.")
+
+    if current_price < 0:
+        raise ValueError("Current price cannot be negative.")
+
+    discount_percentage = (
+        (original_price - current_price) / original_price) * 100
+    return round(discount_percentage, 2)
 
 
 def convert_to_datetime(scraped_at: str) -> int:
@@ -115,6 +132,16 @@ def convert_to_datetime(scraped_at: str) -> int:
 
 def valid_url(product_url: str) -> bool:
     """Tests if the product URL is valid."""
+    if not isinstance(product_url, str):
+        raise TypeError("URL must be a string.")
+
+    url_pattern = re.compile(
+        r'^(https?://)?'  # optional http or https scheme
+        r'(www\.)gi'  # www
+        r'([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}'  # domain name
+        r'(/[\w\-./?%&=]*)?$'  # optional path and query string
+    )
+    return bool(url_pattern.match(product_url))
 
 
 def valid_discount_percentage(discount_percentage: float) -> bool:
