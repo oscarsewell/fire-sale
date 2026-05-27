@@ -31,13 +31,13 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -m pytest . --json-report --json-report-file=qa-pytest-report.json --continue-on-collection-errors
+          python -m pytest . --json-report --json-report-file=qa-pytest-report.json 
 
       - name: Run pylint and collect score
         continue-on-error: true
         run: |
           python -m pylint $(git ls-files '*.py') --exit-zero --score=y > qa-pylint-report.txt
-
+          
       - name: Create QA summary
         if: always()
         run: |
@@ -81,3 +81,40 @@ jobs:
 
           echo "### Pylint Results" >> $GITHUB_STEP_SUMMARY
           echo "- Score: $SCORE / 10" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if QA checks don't pass
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          
+          minimum_pylint = 8.0
+
+          failed_tests = 0
+          errors = 0
+
+          try:
+              report = json.load(Path("qa-pytest-report.json").read_text())
+              summary = report.get("summary", {})
+              failed_tests = summary.get("failed", 0)
+              errors = summary.get("error", 0) + summary.get("errors", 0)
+          except Exception as e:
+              raise SystemExit(f"Error reading pytest report: {e}")
+
+          try:
+              pylint_text = Path("qa-pylint-report.txt").read_text()
+              match = re.search(r'Your code has been rated at ([0-9\.]+)', pylint_text)
+              pylint_score = float(match.group(1)) if match else 0.0
+          except Exception as e:
+              raise SystemExit(f"Error reading pylint report: {e}")
+
+          if failed_tests > 0 or errors > 0:
+              raise SystemExit(f"QA checks failed: {failed_tests} failed tests, {errors} errors")
+
+          if pylint_score < minimum_pylint:
+              raise SystemExit(f"QA checks failed: Pylint score {pylint_score} is below minimum {minimum_pylint}")
+
+          print("QA checks passed successfully")
+          PY
