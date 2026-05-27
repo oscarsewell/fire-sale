@@ -28,12 +28,21 @@ logger = logging.getLogger(__name__)
 
 def clean_product_name(product_name: str) -> str:
     """Cleans the product name by removing leading and trailing whitespace."""
+    if not isinstance(product_name, str):
+        raise TypeError("Product name must be a string.")
+    
+    if not product_name.strip():
+        raise ValueError("Product name cannot be empty or whitespace.")
+    
+    if len(product_name) > 255:
+        raise ValueError("Product name cannot exceed 255 characters.")
+    
     return product_name.strip()
 
 
 def parse_price(price_str: str) -> tuple:
     """Parses a price string and returns the currency symbol and the numeric price."""
-
+    
 
 def normalize_product_prices(product: dict) -> dict:
     """Normalizes the original_price and current_price fields in the product dictionary,
