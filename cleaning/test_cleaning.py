@@ -1,4 +1,6 @@
 """Tests for the cleaning script."""
+from datetime import datetime, timezone, timedelta
+import pytest
 from cleaning import (
     clean_product_name,
     parse_price,
@@ -7,8 +9,6 @@ from cleaning import (
     convert_to_datetime,
     valid_url,
 )
-from datetime import datetime, timezone, timedelta
-import pytest
 
 
 def test_clean_product_name():
@@ -146,7 +146,8 @@ def test_normalize_product_prices_invalid_currency_raises_error():
 
 
 def test_normalize_product_prices_different_currencies_raises_error():
-    """Tests that different currency symbols in original_price and current_price raise a ValueError."""
+    """Tests that different currency symbols in original_price 
+    and current_price raise a ValueError."""
     product = {
         "product_name": "Apple iPhone 13 Pro Max",
         "original_price": "$999.00",
@@ -209,11 +210,17 @@ def test_calculate_discount_percentage_invalid_value_raises_error():
 def test_convert_to_datetime():
     """Tests the convert_to_datetime function."""
     assert convert_to_datetime(
-        "2024-06-01T12:00:00Z") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
+        "2024-06-01T12:00:00Z") == datetime(
+            2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0))
+    )
     assert convert_to_datetime(
-        "2024-06-01T12:00:00+00:00") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
+        "2024-06-01T12:00:00+00:00") == datetime(
+            2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0))
+    )
     assert convert_to_datetime(
-        "2024-06-01T12:00:00-00:00") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
+        "2024-06-01T12:00:00-00:00") == datetime(
+            2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0))
+    )
 
 
 def test_convert_to_datetime_invalid_format_raises_error():

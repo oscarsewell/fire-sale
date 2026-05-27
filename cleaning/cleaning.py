@@ -93,9 +93,9 @@ def parse_price(price_str: str) -> tuple:
 
     try:
         price = float(numeric_price)
-    except ValueError:
+    except ValueError as e:
         logger.error("Could not convert amount to float: '%s'", numeric_price)
-        raise ValueError(f"Invalid numeric price: {numeric_price}")
+        raise ValueError(f"Invalid numeric price: {numeric_price}") from e
 
     logger.info("Parsed price: %s %.2f", currency_symbol, price)
     return currency_symbol, price
@@ -185,9 +185,9 @@ def convert_to_datetime(scraped_at: str) -> datetime:
         dt = datetime.fromisoformat(scraped_at.replace("Z", "+00:00"))
         logger.info("Timestamp converted: %s", dt)
         return dt
-    except ValueError:
+    except ValueError as e:
         logger.error("Failed to parse timestamp: '%s'", scraped_at)
-        raise ValueError(f"Invalid datetime format: {scraped_at}")
+        raise ValueError(f"Invalid datetime format: {scraped_at}") from e
 
 
 def valid_url(product_url: str) -> bool:
