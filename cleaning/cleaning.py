@@ -85,6 +85,24 @@ def parse_price(price_str: str) -> tuple:
 def normalize_product_prices(product: dict) -> dict:
     """Normalizes the original_price and current_price fields in the product dictionary,
     adding a currency field."""
+    if not isinstance(product, dict):
+        raise TypeError("Product must be a dictionary.")
+
+    if "original_price" not in product or "current_price" not in product:
+        raise ValueError(
+            "Product must contain 'original_price' and 'current_price' fields.")
+
+    currency_symbol, original_price = parse_price(product["original_price"])
+    _, current_price = parse_price(product["current_price"])
+
+    if currency_symbol is None:
+        raise ValueError("Currency symbol could not be determined.")
+
+    product["original_price"] = original_price
+    product["current_price"] = current_price
+    product["currency"] = currency_symbol
+
+    return product
 
 
 def calculate_discount_percentage(original_price: float, current_price: float) -> float:

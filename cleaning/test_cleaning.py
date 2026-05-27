@@ -84,6 +84,14 @@ def test_normalize_product_prices():
     assert normalized_product["currency"] == "$"
 
 
+def test_normalize_product_prices_wrong_type_raises_error():
+    """Tests that a non-dictionary product raises a TypeError."""
+    with pytest.raises(TypeError):
+        normalize_product_prices("not a dictionary")
+    with pytest.raises(TypeError):
+        normalize_product_prices(None)
+
+
 def test_normalize_product_prices_invalid_price_raises_error():
     """Tests that an invalid price format raises a ValueError."""
     product = {
@@ -188,6 +196,7 @@ def test_convert_to_datetime():
     assert convert_to_datetime(
         "2024-06-01T12:00:00-00:00") == datetime(2024, 6, 1, 12, 0, 0)
 
+
 def test_convert_to_datetime_invalid_format_raises_error():
     """Tests that an invalid datetime format raises a ValueError."""
     with pytest.raises(ValueError):
@@ -196,4 +205,3 @@ def test_convert_to_datetime_invalid_format_raises_error():
         convert_to_datetime("2024/06/01T12:00:00Z")
     with pytest.raises(ValueError):
         convert_to_datetime("June 1, 2024 12:00:00")
-
