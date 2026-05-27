@@ -1,18 +1,43 @@
 """Tests for the cleaning script."""
 from cleaning import (
-    clean_string,
+    clean_product_name,
     get_currency_symbol,
     clean_price,
     calculate_discount_percentage,
     convert_to_datetime
 )
 from datetime import datetime
+import pytest
 
 
-def test_clean_string():
-    """Tests the clean_string function."""
-    assert clean_string(
+def test_clean_product_name():
+    """Tests the clean_product_name function."""
+    assert clean_product_name(
         "  Apple iPhone 13 Pro Max  ") == "Apple iPhone 13 Pro Max"
+
+
+def test_clean_product_name_empty_raises_error():
+    """Tests that an empty product name raises a ValueError."""
+    with pytest.raises(ValueError):
+        clean_product_name("   ")
+
+
+def test_clean_product_name_non_string_raises_error():
+    """Tests that a non-string product name raises a TypeError."""
+    with pytest.raises(TypeError):
+        clean_product_name(123)
+
+
+def test_clean_product_name_none_raises_error():
+    """Tests that a None product name raises a TypeError."""
+    with pytest.raises(TypeError):
+        clean_product_name(None)
+
+
+def test_clean_product_name_over_max_length_raises_error():
+    """Tests that a product name over the maximum length raises a ValueError."""
+    with pytest.raises(ValueError):
+        clean_product_name("A" * 256)
 
 
 def test_get_currency_symbol():
@@ -21,6 +46,12 @@ def test_get_currency_symbol():
     assert get_currency_symbol("£899.00") == "£"
     assert get_currency_symbol("799.00 €") == "€"
     assert get_currency_symbol("¥699.00") == "¥"
+
+
+def test_get_currency_symbol_empty_raises_error():
+    """Tests that an empty price string raises a ValueError."""
+    with pytest.raises(ValueError):
+        get_currency_symbol("")
 
 
 def test_clean_price():
