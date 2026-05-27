@@ -1,3 +1,4 @@
 pytest
 pylint
 beautifulsoup4
+requests
