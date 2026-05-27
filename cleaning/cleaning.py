@@ -17,6 +17,7 @@ and convert timestamp strings to datetime objects."""
 import logging
 from datetime import datetime
 import re
+import regex
 
 # Configure logging
 logging.basicConfig(
@@ -30,19 +31,56 @@ def clean_product_name(product_name: str) -> str:
     """Cleans the product name by removing leading and trailing whitespace."""
     if not isinstance(product_name, str):
         raise TypeError("Product name must be a string.")
-    
+
     if not product_name.strip():
         raise ValueError("Product name cannot be empty or whitespace.")
-    
+
     if len(product_name) > 255:
         raise ValueError("Product name cannot exceed 255 characters.")
-    
+
     return product_name.strip()
 
 
 def parse_price(price_str: str) -> tuple:
     """Parses a price string and returns the currency symbol and the numeric price."""
-    
+    if not isinstance(price_str, str):
+        raise TypeError("Price must be a string.")
+
+    price_str = price_str.strip()
+
+    if not price_str:
+        raise ValueError("Price cannot be empty.")
+
+    # Match either "<currency><amount>" or "<amount><currency>" using Unicode currency class.
+    match = regex.match(
+        r'^\s*(?:(?P<leading>\p{Sc})\s*)?'
+        r'(?P<amount>[\d,]+(?:\.\d{1,2})?)'
+        r'(?:\s*(?P<trailing>\p{Sc}))?\s*$',
+        price_str,
+    )
+
+    if not match:
+        raise ValueError(f"Invalid price format: {price_str}")
+
+    leading_symbol = match.group("leading")
+    trailing_symbol = match.group("trailing")
+
+    if not leading_symbol and not trailing_symbol:
+        raise ValueError(f"Invalid price format: {price_str}")
+
+    if leading_symbol and trailing_symbol and leading_symbol != trailing_symbol:
+        raise ValueError(f"Conflicting currency symbols in: {price_str}")
+
+    currency_symbol = leading_symbol or trailing_symbol
+    numeric_price = match.group("amount").replace(',', '')
+
+    try:
+        price = float(numeric_price)
+    except ValueError:
+        raise ValueError(f"Invalid numeric price: {numeric_price}")
+
+    return currency_symbol, price
+
 
 def normalize_product_prices(product: dict) -> dict:
     """Normalizes the original_price and current_price fields in the product dictionary,
