@@ -1,7 +1,7 @@
 ## Terraform remote state setup
 
 - Ensure you are in the `/terraform` directory
-- Run `terraform init` 
+- Run `terraform init`
 - At the beginning of the output, you should see:
 
 > **Successfully configured the backend "s3"! Terraform will automatically use this backend unless the backend configuration changes.**
