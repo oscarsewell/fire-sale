@@ -126,8 +126,15 @@ def calculate_discount_percentage(original_price: float, current_price: float) -
     return round(discount_percentage, 2)
 
 
-def convert_to_datetime(scraped_at: str) -> int:
-    """Converts the scraped_at string to a timestamp."""
+def convert_to_datetime(scraped_at: str) -> datetime:
+    """Converts the scraped_at string to a datetime object."""
+    if not isinstance(scraped_at, str):
+        raise TypeError("scraped_at must be a string.")
+
+    try:
+        return datetime.fromisoformat(scraped_at.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"Invalid datetime format: {scraped_at}")
 
 
 def valid_url(product_url: str) -> bool:
@@ -137,15 +144,11 @@ def valid_url(product_url: str) -> bool:
 
     url_pattern = re.compile(
         r'^(https?://)?'  # optional http or https scheme
-        r'(www\.)gi'  # www
+        r'(www\.)'
         r'([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}'  # domain name
         r'(/[\w\-./?%&=]*)?$'  # optional path and query string
     )
     return bool(url_pattern.match(product_url))
-
-
-def valid_discount_percentage(discount_percentage: float) -> bool:
-    """Tests if the discount percentage is valid."""
 
 
 if __name__ == "__main__":

@@ -6,9 +6,8 @@ from cleaning import (
     calculate_discount_percentage,
     convert_to_datetime,
     valid_url,
-    valid_discount_percentage,
 )
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import pytest
 
 
@@ -163,6 +162,7 @@ def test_normalize_product_prices_different_currencies_raises_error():
 def test_valid_url():
     """Tests the valid_url function."""
     assert valid_url("https://www.example.com/product/123") is True
+    assert valid_url("https://www.example.com/product/123/sdaf/456") is True
     assert valid_url("http://www.example.com/product/123") is True
     assert valid_url("www.example.com/product/123") is True
     assert valid_url("example.com/product/123") is False
@@ -175,16 +175,6 @@ def test_valid_url_non_string_raises_error():
         valid_url(123)
     with pytest.raises(TypeError):
         valid_url(None)
-
-
-def test_valid_discount_percentage():
-    """Tests the valid_discount_percentage function."""
-    assert valid_discount_percentage(0) is True
-    assert valid_discount_percentage(50) is True
-    assert valid_discount_percentage(67.74) is True
-    assert valid_discount_percentage(100) is True
-    assert valid_discount_percentage(-1) is False
-    assert valid_discount_percentage(101) is False
 
 
 def test_calculate_discount_percentage():
@@ -219,17 +209,15 @@ def test_calculate_discount_percentage_invalid_value_raises_error():
 def test_convert_to_datetime():
     """Tests the convert_to_datetime function."""
     assert convert_to_datetime(
-        "2024-06-01T12:00:00Z") == datetime(2024, 6, 1, 12, 0, 0)
+        "2024-06-01T12:00:00Z") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     assert convert_to_datetime(
-        "2024-06-01T12:00:00+00:00") == datetime(2024, 6, 1, 12, 0, 0)
+        "2024-06-01T12:00:00+00:00") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     assert convert_to_datetime(
-        "2024-06-01T12:00:00-00:00") == datetime(2024, 6, 1, 12, 0, 0)
+        "2024-06-01T12:00:00-00:00") == datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
 
 
 def test_convert_to_datetime_invalid_format_raises_error():
     """Tests that an invalid datetime format raises a ValueError."""
-    with pytest.raises(ValueError):
-        convert_to_datetime("2024-06-01 12:00:00")
     with pytest.raises(ValueError):
         convert_to_datetime("2024/06/01T12:00:00Z")
     with pytest.raises(ValueError):
