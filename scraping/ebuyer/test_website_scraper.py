@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 from bs4 import BeautifulSoup
-from scraping.ebuyer.website_scraper import (
+from website_scraper import (
     fetch_html_content,
     parse_html_content,
     extract_product_name,
