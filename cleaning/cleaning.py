@@ -144,13 +144,13 @@ def normalize_product_prices(product: dict) -> dict:
 
 def calculate_discount_percentage(original_price: float, current_price: float) -> float:
     """Calculates the discount percentage."""
-    logger.debug("Calculating discount: original=%.2f, current=%.2f",
-                 original_price, current_price)
-
     if not isinstance(original_price, (int, float)) or not isinstance(current_price, (int, float)):
         logger.error("Non-numeric prices provided: original=%r, current=%r",
                      original_price, current_price)
         raise TypeError("Prices must be numeric.")
+
+    logger.debug("Calculating discount: original=%.2f, current=%.2f",
+                 original_price, current_price)
 
     if original_price <= 0:
         logger.error("Original price is not positive: %.2f", original_price)
@@ -215,10 +215,23 @@ def valid_url(product_url: str) -> bool:
 def clean_product_data(product: dict) -> dict:
     """Cleans and normalizes the product data."""
     logger.info("Starting full product data clean.")
+
+    if not isinstance(product, dict):
+        logger.error("product is not a dictionary: %r", product)
+        raise TypeError("product must be a dictionary.")
+
+    required_keys = ("scraped_at",)
+    missing_keys = [key for key in required_keys if key not in product]
+    if missing_keys:
+        logger.error("product is missing required keys: %s", missing_keys)
+        raise ValueError(
+            f"product is missing required keys: {', '.join(missing_keys)}"
+        )
+
     product["product_name"] = clean_product_name(
         product.get("product_name", ""))
     product = normalize_product_prices(product)
-    product["scraped_at"] = convert_to_datetime(product.get("scraped_at", ""))
+    product["scraped_at"] = convert_to_datetime(product["scraped_at"])
     logger.info("Product data clean complete.")
     return product
 
