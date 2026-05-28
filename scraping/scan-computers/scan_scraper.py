@@ -24,7 +24,7 @@ def fetch_html_content(url: str) -> str:
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
     except requests.RequestException as e:
-        log.error("Failed to fetch HTML content from URL: %s", url, e)
+        log.exception("Failed to fetch HTML content from URL: %s", url)
         raise
 
     return response.text
