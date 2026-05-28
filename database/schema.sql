@@ -1,6 +1,10 @@
+-- Tear down existing schema objects so this file can be safely re-run
+DROP TABLE IF EXISTS price_history;
+DROP TABLE IF EXISTS tracked_products;
+DROP TYPE IF EXISTS notification_type;
+
 -- ENUM type for notification destinations
 CREATE TYPE notification_type AS ENUM ('email', 'discord');
-
 CREATE TABLE tracked_products (
   id SERIAL PRIMARY KEY,
   product_url VARCHAR(2048) NOT NULL,
