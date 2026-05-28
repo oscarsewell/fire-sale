@@ -126,7 +126,7 @@ class TestFetchHTMLContent:
         result = fetch_html_content(valid_url)
         assert isinstance(result, str)
         assert "<html>" in result
-        mock_get.assert_called_once_with(valid_url, impersonate="chrome", timeout=10)
+        mock_get.assert_called_once_with(valid_url, timeout=10)
 
     @patch("website_scraper.requests.get")
     def test_fetch_html_content_raises_on_bad_status(self, mock_get, valid_url):
