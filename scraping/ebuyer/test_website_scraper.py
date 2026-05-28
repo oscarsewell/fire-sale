@@ -207,7 +207,7 @@ class TestScrapeAllProducts:
     def test_scrape_all_products_empty_list(self):
         """Test that scrape_all_products handles empty URL list."""
         result = scrape_all_products([])
-        assert not result
+        assert result == []
 
     def test_scrape_all_products_invalid_type(self):
         """Test that scrape_all_products raises error when given None (e.g a failed DB query)."""
