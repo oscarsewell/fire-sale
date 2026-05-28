@@ -52,7 +52,6 @@ def extract_product_name(soup: BeautifulSoup) -> str:
 def extract_current_price(soup: BeautifulSoup) -> str:
     """Extracts the current price of the product from the parsed HTML."""
     price = soup.find("span", class_="price")
-    print(price)
     if price:
         log.debug("Extracted current price successfully: %s", price.text.strip())
         return price.get_text().strip()
