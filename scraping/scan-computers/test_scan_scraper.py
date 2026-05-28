@@ -56,7 +56,7 @@ class TestParseHTMLContent:
         """Test that parse_html_content correctly parses HTML."""
         soup = parse_html_content(mock_html_content)
         assert soup.find('meta', property='og:title')['content'] == "Gaming Laptop"
-        assert soup.find('span', id='lblSellingPrice').text == "$99.99"
+        assert soup.find('span', class_='price').text == "$99.99"
 
     @pytest.mark.parametrize("invalid_content", ["", "<incomplete>"])
     def test_parse_html_content_edge_cases(self, invalid_content):
