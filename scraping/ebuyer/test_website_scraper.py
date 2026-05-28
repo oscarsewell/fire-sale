@@ -208,10 +208,10 @@ class TestExtractOriginalPrice:
         result = extract_original_price(mock_soup)
         assert isinstance(result, str)
 
-    def test_extract_original_price_returns_current_when_missing(self, mock_soup_no_original_price):
-        """Test that extract_original_price returns current price when element missing."""
+    def test_extract_original_price_returns_none_when_missing(self, mock_soup_no_original_price):
+        """Test that extract_original_price returns None when the element is missing."""
         result = extract_original_price(mock_soup_no_original_price)
-        assert result == "$300.00"
+        assert result is None
 
     def test_extract_original_price_strips_whitespace(self, mock_soup_with_whitespace):
         """Test that extract_original_price strips whitespace."""
