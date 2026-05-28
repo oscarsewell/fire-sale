@@ -1,129 +1,124 @@
 data "aws_partition" "current" {}
 
+# ── Identity ──────────────────────────────────────────────────────────────────
+
 variable "project_name" {
-	description = "Project identifier used in IAM role and policy names."
+	description = "Project identifier used in resource names."
 	type        = string
 	default     = "fire-sale"
 }
 
 variable "environment" {
-	description = "Environment identifier (for example dev, staging, prod)."
+	description = "Environment identifier (e.g. dev, staging, prod)."
 	type        = string
 	default     = "prod"
 }
 
-variable "step_function_state_machine_arn" {
-	description = "State machine ARN started by EventBridge Scheduler."
+# ── Networking ────────────────────────────────────────────────────────────────
+
+variable "aws_region" {
+	description = "AWS region for the provider and CloudWatch log configuration."
+	type        = string
+	default     = "eu-west-2"
+}
+
+variable "vpc_id" {
+	description = "VPC ID used for RDS and ECS tasks."
 	type        = string
 }
 
-variable "tracked_product_checker_lambda_arn" {
-	description = "Lambda ARN for tracked product checker."
-	type        = string
+variable "subnet_ids" {
+	description = "Subnet IDs for RDS and ECS Fargate tasks."
+	type        = list(string)
 }
 
-variable "scraper_overclockers_lambda_arn" {
-	description = "Lambda ARN for Overclockers scraper."
-	type        = string
+variable "ecs_subnet_ids" {
+	description = "Subnet IDs for ECS Fargate tasks (dashboard and Discord bot)."
+	type        = list(string)
 }
 
-variable "scraper_ebuyer_lambda_arn" {
-	description = "Lambda ARN for Ebuyer scraper."
-	type        = string
+# ── Scraper configuration ─────────────────────────────────────────────────────
+
+variable "scraper_names" {
+	description = "List of website slugs to scrape. Each entry gets its own Lambda function and ECR repository. Add a new slug here to support a new retailer."
+	type        = list(string)
+	default     = ["overclockers", "ebuyer", "scan"]
 }
 
-variable "scraper_scan_lambda_arn" {
-	description = "Lambda ARN for Scan scraper."
+# ── Container images ──────────────────────────────────────────────────────────
+
+variable "image_tag" {
+	description = "Docker image tag to deploy for all Lambda functions and ECS tasks."
 	type        = string
+	default     = "latest"
 }
 
-variable "cleaning_lambda_arn" {
-	description = "Lambda ARN for cleaning data."
+# ── RDS ───────────────────────────────────────────────────────────────────────
+
+variable "rds_instance_class" {
+	description = "RDS instance class."
 	type        = string
+	default     = "db.t4g.micro"
 }
 
-variable "determine_notification_lambda_arn" {
-	description = "Lambda ARN for generating notifications."
+variable "rds_db_name" {
+	description = "Name of the initial database created on the RDS instance."
 	type        = string
+	default     = "firesale"
 }
 
-variable "rds_secret_arn" {
-	description = "Secrets Manager secret ARN containing DB credentials."
+variable "rds_master_username" {
+	description = "Master username for the RDS instance."
 	type        = string
+	default     = "postgres"
 }
 
 variable "rds_kms_key_arn" {
-	description = "Optional KMS key ARN if the DB secret uses a customer-managed key."
+	description = "Optional KMS key ARN if the RDS Secrets Manager secret uses a customer-managed key."
 	type        = string
 	default     = null
 }
 
+# ── RDS IAM auth user ARNs (optional) ────────────────────────────────────────
+
 variable "tracked_product_checker_rds_db_user_arn" {
-	description = "Optional RDS IAM DB user ARN for tracked product checker Lambda."
+	description = "Optional RDS IAM DB user ARN for the tracked product checker Lambda."
 	type        = string
 	default     = null
 }
 
 variable "cleaning_rds_db_user_arn" {
-	description = "Optional RDS IAM DB user ARN for cleaning Lambda."
+	description = "Optional RDS IAM DB user ARN for the cleaning Lambda."
 	type        = string
 	default     = null
 }
 
 variable "determine_notification_rds_db_user_arn" {
-	description = "Optional RDS IAM DB user ARN for determine notification Lambda."
+	description = "Optional RDS IAM DB user ARN for the determine notification Lambda."
 	type        = string
 	default     = null
 }
 
 variable "dashboard_rds_db_user_arn" {
-	description = "Optional RDS IAM DB user ARN for Streamlit dashboard task."
+	description = "Optional RDS IAM DB user ARN for the Streamlit dashboard ECS task."
 	type        = string
 	default     = null
 }
 
 variable "discord_bot_rds_db_user_arn" {
-	description = "Optional RDS IAM DB user ARN for Discord bot task."
+	description = "Optional RDS IAM DB user ARN for the Discord bot ECS task."
 	type        = string
 	default     = null
 }
 
+# ── External service ARNs ─────────────────────────────────────────────────────
+
 variable "ses_identity_arn" {
-	description = "SES identity ARN used as sender identity."
+	description = "SES verified identity ARN used as the email sender."
 	type        = string
 }
 
 variable "discord_alert_queue_arn" {
-	description = "SQS queue ARN used to deliver alerts to the Discord bot."
-	type        = string
-}
-
-variable "lambda_tracked_checker_log_group_arn" {
-	description = "CloudWatch log group ARN for tracked product checker Lambda."
-	type        = string
-}
-
-variable "lambda_scraper_overclockers_log_group_arn" {
-	description = "CloudWatch log group ARN for Overclockers scraper Lambda."
-	type        = string
-}
-
-variable "lambda_scraper_ebuyer_log_group_arn" {
-	description = "CloudWatch log group ARN for Ebuyer scraper Lambda."
-	type        = string
-}
-
-variable "lambda_scraper_scan_log_group_arn" {
-	description = "CloudWatch log group ARN for Scan scraper Lambda."
-	type        = string
-}
-
-variable "lambda_cleaning_log_group_arn" {
-	description = "CloudWatch log group ARN for cleaning Lambda."
-	type        = string
-}
-
-variable "lambda_determine_notification_log_group_arn" {
-	description = "CloudWatch log group ARN for determine notification Lambda."
+	description = "SQS queue ARN used to deliver price-alert messages to the Discord bot."
 	type        = string
 }

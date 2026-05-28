@@ -29,8 +29,8 @@ data "aws_iam_policy_document" "lambda_tracked_product_checker" {
 		]
 
 		resources = [
-			var.lambda_tracked_checker_log_group_arn,
-			"${var.lambda_tracked_checker_log_group_arn}:*",
+			aws_cloudwatch_log_group.lambda_tracked_product_checker.arn,
+			"${aws_cloudwatch_log_group.lambda_tracked_product_checker.arn}:*",
 		]
 	}
 
@@ -40,7 +40,7 @@ data "aws_iam_policy_document" "lambda_tracked_product_checker" {
 
 		actions = ["secretsmanager:GetSecretValue"]
 
-		resources = [var.rds_secret_arn]
+		resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
 	}
 
 	dynamic "statement" {
@@ -80,14 +80,24 @@ resource "aws_iam_role_policy_attachment" "lambda_tracked_product_checker" {
 	policy_arn = aws_iam_policy.lambda_tracked_product_checker.arn
 }
 
-# Overclockers Scraper Lambda
+# Scraper Lambdas — one per website, driven by var.scraper_names.
+# Add a new slug to that variable and Terraform will provision everything below.
 
-resource "aws_iam_role" "lambda_scraper_overclockers" {
-	name               = "${var.project_name}-${var.environment}-lambda-scraper-overclockers"
+resource "aws_cloudwatch_log_group" "lambda_scraper" {
+	for_each          = toset(var.scraper_names)
+	name              = "/aws/lambda/${var.project_name}-${var.environment}-scraper-${each.key}"
+	retention_in_days = 14
+}
+
+resource "aws_iam_role" "lambda_scraper" {
+	for_each           = toset(var.scraper_names)
+	name               = "${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
 	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
-data "aws_iam_policy_document" "lambda_scraper_overclockers" {
+data "aws_iam_policy_document" "lambda_scraper" {
+	for_each = toset(var.scraper_names)
+
 	statement {
 		sid    = "AllowLambdaLogging"
 		effect = "Allow"
@@ -98,88 +108,22 @@ data "aws_iam_policy_document" "lambda_scraper_overclockers" {
 		]
 
 		resources = [
-			var.lambda_scraper_overclockers_log_group_arn,
-			"${var.lambda_scraper_overclockers_log_group_arn}:*",
+			aws_cloudwatch_log_group.lambda_scraper[each.key].arn,
+			"${aws_cloudwatch_log_group.lambda_scraper[each.key].arn}:*",
 		]
 	}
 }
 
-resource "aws_iam_policy" "lambda_scraper_overclockers" {
-	name   = "${var.project_name}-${var.environment}-lambda-scraper-overclockers"
-	policy = data.aws_iam_policy_document.lambda_scraper_overclockers.json
+resource "aws_iam_policy" "lambda_scraper" {
+	for_each = toset(var.scraper_names)
+	name     = "${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
+	policy   = data.aws_iam_policy_document.lambda_scraper[each.key].json
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_scraper_overclockers" {
-	role       = aws_iam_role.lambda_scraper_overclockers.name
-	policy_arn = aws_iam_policy.lambda_scraper_overclockers.arn
-}
-
-# Ebuyer Scraper Lambda
-
-resource "aws_iam_role" "lambda_scraper_ebuyer" {
-	name               = "${var.project_name}-${var.environment}-lambda-scraper-ebuyer"
-	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-}
-
-data "aws_iam_policy_document" "lambda_scraper_ebuyer" {
-	statement {
-		sid    = "AllowLambdaLogging"
-		effect = "Allow"
-
-		actions = [
-			"logs:CreateLogStream",
-			"logs:PutLogEvents",
-		]
-
-		resources = [
-			var.lambda_scraper_ebuyer_log_group_arn,
-			"${var.lambda_scraper_ebuyer_log_group_arn}:*",
-		]
-	}
-}
-
-resource "aws_iam_policy" "lambda_scraper_ebuyer" {
-	name   = "${var.project_name}-${var.environment}-lambda-scraper-ebuyer"
-	policy = data.aws_iam_policy_document.lambda_scraper_ebuyer.json
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_scraper_ebuyer" {
-	role       = aws_iam_role.lambda_scraper_ebuyer.name
-	policy_arn = aws_iam_policy.lambda_scraper_ebuyer.arn
-}
-
-# Scan Scraper Lambda
-
-resource "aws_iam_role" "lambda_scraper_scan" {
-	name               = "${var.project_name}-${var.environment}-lambda-scraper-scan"
-	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-}
-
-data "aws_iam_policy_document" "lambda_scraper_scan" {
-	statement {
-		sid    = "AllowLambdaLogging"
-		effect = "Allow"
-
-		actions = [
-			"logs:CreateLogStream",
-			"logs:PutLogEvents",
-		]
-
-		resources = [
-			var.lambda_scraper_scan_log_group_arn,
-			"${var.lambda_scraper_scan_log_group_arn}:*",
-		]
-	}
-}
-
-resource "aws_iam_policy" "lambda_scraper_scan" {
-	name   = "${var.project_name}-${var.environment}-lambda-scraper-scan"
-	policy = data.aws_iam_policy_document.lambda_scraper_scan.json
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_scraper_scan" {
-	role       = aws_iam_role.lambda_scraper_scan.name
-	policy_arn = aws_iam_policy.lambda_scraper_scan.arn
+resource "aws_iam_role_policy_attachment" "lambda_scraper" {
+	for_each   = toset(var.scraper_names)
+	role       = aws_iam_role.lambda_scraper[each.key].name
+	policy_arn = aws_iam_policy.lambda_scraper[each.key].arn
 }
 
 # Cleaning Lambda
@@ -200,8 +144,8 @@ data "aws_iam_policy_document" "lambda_cleaning" {
 		]
 
 		resources = [
-			var.lambda_cleaning_log_group_arn,
-			"${var.lambda_cleaning_log_group_arn}:*",
+			aws_cloudwatch_log_group.lambda_cleaning.arn,
+			"${aws_cloudwatch_log_group.lambda_cleaning.arn}:*",
 		]
 	}
 
@@ -211,7 +155,7 @@ data "aws_iam_policy_document" "lambda_cleaning" {
 
 		actions = ["secretsmanager:GetSecretValue"]
 
-		resources = [var.rds_secret_arn]
+		resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
 	}
 
 	dynamic "statement" {
@@ -269,8 +213,8 @@ data "aws_iam_policy_document" "lambda_determine_notification" {
 		]
 
 		resources = [
-			var.lambda_determine_notification_log_group_arn,
-			"${var.lambda_determine_notification_log_group_arn}:*",
+			aws_cloudwatch_log_group.lambda_determine_notification.arn,
+			"${aws_cloudwatch_log_group.lambda_determine_notification.arn}:*",
 		]
 	}
 
@@ -280,7 +224,7 @@ data "aws_iam_policy_document" "lambda_determine_notification" {
 
 		actions = ["secretsmanager:GetSecretValue"]
 
-		resources = [var.rds_secret_arn]
+		resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
 	}
 
 	dynamic "statement" {
@@ -340,3 +284,109 @@ resource "aws_iam_role_policy_attachment" "lambda_determine_notification" {
 	role       = aws_iam_role.lambda_determine_notification.name
 	policy_arn = aws_iam_policy.lambda_determine_notification.arn
 }
+
+# ── CloudWatch Log Groups ─────────────────────────────────────────────────────
+
+resource "aws_cloudwatch_log_group" "lambda_tracked_product_checker" {
+	name              = "/aws/lambda/${var.project_name}-${var.environment}-tracked-product-checker"
+	retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "lambda_cleaning" {
+	name              = "/aws/lambda/${var.project_name}-${var.environment}-cleaning"
+	retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "lambda_determine_notification" {
+	name              = "/aws/lambda/${var.project_name}-${var.environment}-determine-notification"
+	retention_in_days = 14
+}
+
+# ── Lambda Functions ──────────────────────────────────────────────────────────
+# Images must be pushed to the ECR repositories before these resources can be
+# applied. Run `terraform apply -target=aws_ecr_repository.lambda` first, then
+# build and push the images, then apply the rest.
+
+resource "aws_lambda_function" "scraper" {
+	for_each = toset(var.scraper_names)
+
+	function_name = "${var.project_name}-${var.environment}-scraper-${each.key}"
+	role          = aws_iam_role.lambda_scraper[each.key].arn
+	package_type  = "Image"
+	image_uri     = "${aws_ecr_repository.lambda["scraper-${each.key}"].repository_url}:${var.image_tag}"
+	timeout       = 300
+	memory_size   = 512
+
+	logging_config {
+		log_format = "JSON"
+		log_group  = aws_cloudwatch_log_group.lambda_scraper[each.key].name
+	}
+
+	environment {
+		variables = {
+			ENVIRONMENT  = var.environment
+			WEBSITE_NAME = each.key
+		}
+	}
+}
+
+resource "aws_lambda_function" "tracked_product_checker" {
+	function_name = "${var.project_name}-${var.environment}-tracked-product-checker"
+	role          = aws_iam_role.lambda_tracked_product_checker.arn
+	package_type  = "Image"
+	image_uri     = "${aws_ecr_repository.lambda["tracked-product-checker"].repository_url}:${var.image_tag}"
+	timeout       = 180
+	memory_size   = 256
+
+	logging_config {
+		log_format = "JSON"
+		log_group  = aws_cloudwatch_log_group.lambda_tracked_product_checker.name
+	}
+
+	environment {
+		variables = {
+			ENVIRONMENT = var.environment
+		}
+	}
+}
+
+resource "aws_lambda_function" "cleaning" {
+	function_name = "${var.project_name}-${var.environment}-cleaning"
+	role          = aws_iam_role.lambda_cleaning.arn
+	package_type  = "Image"
+	image_uri     = "${aws_ecr_repository.lambda["cleaning"].repository_url}:${var.image_tag}"
+	timeout       = 180
+	memory_size   = 256
+
+	logging_config {
+		log_format = "JSON"
+		log_group  = aws_cloudwatch_log_group.lambda_cleaning.name
+	}
+
+	environment {
+		variables = {
+			ENVIRONMENT = var.environment
+		}
+	}
+}
+
+resource "aws_lambda_function" "determine_notification" {
+	function_name = "${var.project_name}-${var.environment}-determine-notification"
+	role          = aws_iam_role.lambda_determine_notification.arn
+	package_type  = "Image"
+	image_uri     = "${aws_ecr_repository.lambda["determine-notification"].repository_url}:${var.image_tag}"
+	timeout       = 60
+	memory_size   = 128
+
+	logging_config {
+		log_format = "JSON"
+		log_group  = aws_cloudwatch_log_group.lambda_determine_notification.name
+	}
+
+	environment {
+		variables = {
+			ENVIRONMENT = var.environment
+		}
+	}
+}
+
