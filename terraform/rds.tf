@@ -85,8 +85,9 @@ resource "aws_db_instance" "postgres" {
 
 # Random password for database
 resource "random_password" "db_password" {
-  length  = 32
-  special = true
+  length           = 32
+  special          = true
+  override_special = "!#$%^&*()-_=+[]{}:;,.?"
 }
 
 # Store password in AWS Secrets Manager
