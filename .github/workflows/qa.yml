@@ -1,0 +1,121 @@
+name: QA Feedback
+
+on:
+  push:
+  pull_request:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  qa-feedback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest pylint pytest-json-report
+
+      - name: Run pytest and collect results
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -m pytest . --json-report --json-report-file=qa-pytest-report.json 
+
+      - name: Run pylint and collect score
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -m pylint $(git ls-files '*.py') --exit-zero --score=y > qa-pylint-report.txt
+          
+      - name: Create QA summary
+        if: always()
+        run: |
+          echo "## QA Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pytest Results" >> $GITHUB_STEP_SUMMARY
+
+          python - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+
+          try:
+              with open("qa-pytest-report.json") as f:
+                  report = json.load(f)
+
+              summary = report["summary"]
+              passed = summary.get("passed", 0)
+              failed = summary.get("failed", 0)
+              skipped = summary.get("skipped", 0)
+              total = passed + failed + skipped
+
+              pass_percent = (passed / total * 100) if total > 0 else 0
+
+              print(f"- Passed: {passed}")
+              print(f"- Failed: {failed}")
+              print(f"- Skipped: {skipped}")
+              print(f"- Pass rate: {pass_percent:.2f}%")
+          except Exception as e:
+              print(f"Error reading pytest report: {e}")
+          PY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Add pylint score
+        if: always()
+        run: |
+          SCORE=$(grep -oP 'Your code has been rated at \K[0-9\.]+' qa-pylint-report.txt || echo "Unavailable")
+          
+          if [ -z "$SCORE" ]; then
+            SCORE="Unavailable"
+          fi
+
+          echo "### Pylint Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Score: $SCORE / 10" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check QA results are satisfactory
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          
+          minimum_pylint = 8.0
+
+          failed_tests = 0
+          errors = 0
+
+          try:
+              report = json.loads(Path("qa-pytest-report.json").read_text())
+              summary = report.get("summary", {})
+              failed_tests = summary.get("failed", 0)
+              errors = summary.get("error", 0) + summary.get("errors", 0)
+          except Exception as e:
+              raise SystemExit(f"Error reading pytest report: {e}")
+
+          try:
+              pylint_text = Path("qa-pylint-report.txt").read_text()
+              match = re.search(r'Your code has been rated at ([0-9\.]+)', pylint_text)
+              pylint_score = float(match.group(1)) if match else 0.0
+          except Exception as e:
+              raise SystemExit(f"Error reading pylint report: {e}")
+
+          if failed_tests > 0 or errors > 0:
+              raise SystemExit(f"QA checks failed: {failed_tests} failed tests, {errors} errors")
+
+          if pylint_score < minimum_pylint:
+              raise SystemExit(f"QA checks failed: Pylint score {pylint_score} is below minimum {minimum_pylint}")
+
+          print("QA checks passed successfully")
+          PY
