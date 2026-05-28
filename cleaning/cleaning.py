@@ -168,11 +168,6 @@ def calculate_discount_percentage(original_price: float, current_price: float) -
     return result
 
 
-_ISO8601_PATTERN = re.compile(
-    r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$'
-)
-
-
 def convert_to_datetime(scraped_at: str) -> datetime:
     """Converts the scraped_at string to a datetime object."""
     logger.debug("Converting timestamp: '%s'", scraped_at)
