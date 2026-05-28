@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 from bs4 import BeautifulSoup
-from website_scraper import (
+from scan_scraper import (
     fetch_html_content,
     parse_html_content,
     extract_product_name,
@@ -19,7 +19,7 @@ from website_scraper import (
 class TestFetchHTMLContent:
     """Test cases for fetching HTML content from URLs."""
 
-    @patch("website_scraper.requests.get")
+    @patch("scan_scraper.requests.get")
     def test_fetch_html_content_success(self, mock_get, valid_url):
         """Test successful HTML content fetching."""
         mock_response = MagicMock()
@@ -31,7 +31,7 @@ class TestFetchHTMLContent:
         assert "<html>" in result
         mock_get.assert_called_once_with(valid_url, impersonate="chrome", timeout=10)
 
-    @patch("website_scraper.requests.get")
+    @patch("scan_scraper.requests.get")
     def test_fetch_html_content_raises_on_bad_status(self, mock_get, valid_url):
         """Test that fetch_html_content raises error on bad HTTP status."""
         mock_get.return_value.raise_for_status.side_effect = Exception("404 Not Found")
