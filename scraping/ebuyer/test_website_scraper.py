@@ -1,3 +1,4 @@
+# pylint: disable = redefined-outer-name
 """Tests for the website scraping script."""
 
 from datetime import datetime
@@ -101,7 +102,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 
 
 @pytest.fixture
-def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, mock_soup_no_original_price):
+def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
+                           mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
     with patch("website_scraper.fetch_html_content") as mock_fetch, \
          patch("website_scraper.parse_html_content") as mock_parse:
@@ -120,7 +122,7 @@ class TestFetchHTMLContent:
         mock_response = MagicMock()
         mock_response.text = "<html><body>Test</body></html>"
         mock_get.return_value = mock_response
-        
+
         result = fetch_html_content(valid_url)
         assert isinstance(result, str)
         assert "<html>" in result
@@ -219,7 +221,7 @@ class TestExtractOriginalPrice:
 
 class TestExtractWebsiteName:
     """Test cases for extracting website name."""
-    
+
     def test_extract_website_name_success(self, valid_url, mock_soup):
         """Test successful website name extraction."""
         result = extract_website_name(valid_url, mock_soup)
@@ -271,11 +273,11 @@ class TestExtractAllProductInfo:
 
         scraped_at = datetime.fromisoformat(result["scraped_at"])
         assert isinstance(scraped_at, datetime)
- 
+
 
 class TestScrapeAllProducts:
     """Test cases for scraping multiple products."""
-    
+
     def test_scrape_all_products_returns_list(self, mock_scraper_functions, valid_urls):
         """Test that scrape_all_products returns a list.""" 
         result = scrape_all_products(valid_urls)
@@ -308,4 +310,3 @@ class TestScrapeAllProducts:
         """Test that scrape_all_products raises error when given None (e.g a failed DB query)."""
         with pytest.raises(TypeError):
             scrape_all_products(None)
-
