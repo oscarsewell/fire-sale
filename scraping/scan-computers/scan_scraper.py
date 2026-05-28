@@ -105,7 +105,7 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
     if not isinstance(urls, list):
         raise TypeError("Must pass a list of URLs.")
 
-    log.info(f"Starting to scrape {len(urls)} products")
+    log.info("Starting to scrape %d products", len(urls))
     products = []
 
     for url in urls:
