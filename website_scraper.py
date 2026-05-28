@@ -1,8 +1,8 @@
+# pylint: disable = unnecessary-pass, unused-import, unused-argument
 """A script to scrape price and product data from the HTML content on a website."""
-
 from datetime import datetime
-import requests
 from bs4 import BeautifulSoup
+import requests
 
 
 def fetch_html_content(url: str) -> str:
@@ -35,7 +35,7 @@ def extract_website_name(soup: BeautifulSoup) -> str:
     pass
 
 
-def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:    
+def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
     """Extracts and returns relevant data for each product as a dictionary."""
     pass
 
