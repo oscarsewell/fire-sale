@@ -1,10 +1,17 @@
-# pylint: disable = unnecessary-pass, unused-import, unused-argument, redefined-outer-name
+# pylint: disable = redefined-outer-name
 """A script to scrape price and product data from the HTML content on a website."""
 
+import logging
 import re
 from datetime import datetime
 from curl_cffi import requests
 from bs4 import BeautifulSoup
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+log = logging.getLogger(__name__)
 
 
 def fetch_html_content(url: str) -> str:
@@ -15,9 +22,9 @@ def fetch_html_content(url: str) -> str:
     try:
         response = requests.get(url, impersonate="chrome", timeout=10)
         response.raise_for_status()
-        print(f"Successfully fetched HTML content from URL: {url}")
+        log.debug(f"Successfully fetched HTML content from URL: {url}")
     except requests.RequestException as e:
-        print(f"Failed to fetch HTML content from URL: {url} - {e}")
+        log.error(f"Failed to fetch HTML content from URL: {url} - {e}")
         raise
 
     return response.text
@@ -26,7 +33,7 @@ def fetch_html_content(url: str) -> str:
 def parse_html_content(content: str) -> BeautifulSoup:
     """Parses the HTML content for that product."""
     soup = BeautifulSoup(content, 'html.parser')
-    print("Parsed HTML content successfully.")
+    log.debug("Parsed HTML content successfully.")
     return soup
 
 
@@ -35,22 +42,22 @@ def extract_product_name(soup: BeautifulSoup) -> str:
     og_title = soup.find('meta', property='og:title')
     if og_title:
         product_name = og_title.get("content")
-        print(f"Extracted product name successfully: {product_name}")
+        log.debug(f"Extracted product name successfully: {product_name}")
         return product_name.strip()
-    else:
-        print("Product name not found.")
-        return "N/A"
+
+    log.warning("Product name not found.")
+    return "N/A"
 
 
 def extract_current_price(soup: BeautifulSoup) -> str:
     """Extracts the current price of the product from the parsed HTML."""
     price = soup.find("span", id="lblSellingPrice")
     if price:
-        print(f"Extracted current price successfully: {price.text.strip()}")
+        log.debug(f"Extracted current price successfully: {price.text.strip()}")
         return price.text.strip()
-    else:
-        print("Current price not found.")
-        return "N/A"
+
+    log.warning("Current price not found.")
+    return "N/A"
 
 
 def extract_original_price(soup: BeautifulSoup) -> str:
@@ -58,27 +65,27 @@ def extract_original_price(soup: BeautifulSoup) -> str:
     original_price = soup.find('span', id='lblTicketPrice')
 
     if original_price:
-        print(f"Extracted original price successfully: {original_price.text.strip()}")
+        log.debug(f"Extracted original price successfully: {original_price.text.strip()}")
         return original_price.text.strip()
-    else:
-        print("HTML tag for original price not found; current price identified as original price.")
-        return extract_current_price(soup)
+
+    log.warning("HTML tag for original price not found; current price identified as original price.")
+    return extract_current_price(soup)
 
 
 def extract_website_name(url: str, soup: BeautifulSoup) -> str:
     """Extracts the name of the website from the parsed HTML."""
     og_site = soup.find('meta', property='og:site_name')
     if og_site:
-        print(f"Extracted website name from HTML successfully: {og_site.get('content')}")
+        log.debug(f"Extracted website name from HTML successfully: {og_site.get('content')}")
         return og_site.get('content').strip().lower()
-    else:
-        match = re.search(r'(?:https?://)?(?:www\.)?([a-zA-Z0-9-]+)\.', url)
-        if match:
-            print(f"Extracted website name from URL successfully: {match.group(1)}")
-            return match.group(1).lower()
 
-        print("Website name not found in HTML; unable to extract from URL.")
-        return "N/A"
+    match = re.search(r'(?:https?://)?(?:www\.)?([a-zA-Z0-9-]+)\.', url)
+    if match:
+        log.debug(f"Extracted website name from URL successfully: {match.group(1)}")
+        return match.group(1).lower()
+
+    log.warning("Website name not found in HTML; unable to extract from URL.")
+    return "N/A"
 
 
 def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
@@ -98,7 +105,7 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
     if not isinstance(urls, list):
         raise TypeError("Must pass a list of URLs.")
 
-    print(f"Starting to scrape {len(urls)} products")
+    log.info(f"Starting to scrape {len(urls)} products")
     products = []
 
     for url in urls:
@@ -107,10 +114,9 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
             soup = parse_html_content(response)
             product_info = extract_all_product_info(url, soup)
             products.append(product_info)
-            print(f"Successfully scraped product information from URL: {url}")
-
+            log.info(f"Successfully scraped product information from URL: {url}")
         except Exception as e:
-            print(f"Failed to scrape URL: {url} - {e}")
+            log.error(f"Failed to scrape URL: {url} - {e}")
 
     return products
 

@@ -1,4 +1,4 @@
-# pylint: disable = redefined-outer-name
+# pylint: disable = unused-argument, redefined-outer-name
 """Tests for the website scraping script."""
 
 from datetime import datetime
@@ -102,7 +102,7 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 
 
 @pytest.fixture
-def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
+def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price,
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
     with patch("website_scraper.fetch_html_content") as mock_fetch, \
@@ -126,7 +126,7 @@ class TestFetchHTMLContent:
         result = fetch_html_content(valid_url)
         assert isinstance(result, str)
         assert "<html>" in result
-        mock_get.assert_called_once_with(valid_url, timeout=10)
+        mock_get.assert_called_once_with(valid_url, impersonate="chrome", timeout=10)
 
     @patch("website_scraper.requests.get")
     def test_fetch_html_content_raises_on_bad_status(self, mock_get, valid_url):
@@ -208,10 +208,10 @@ class TestExtractOriginalPrice:
         result = extract_original_price(mock_soup)
         assert isinstance(result, str)
 
-    def test_extract_original_price_returns_none_when_missing(self, mock_soup_no_original_price):
-        """Test that extract_original_price returns None when the element is missing."""
+    def test_extract_original_price_returns_current_when_missing(self, mock_soup_no_original_price):
+        """Test that extract_original_price returns current price when element missing."""
         result = extract_original_price(mock_soup_no_original_price)
-        assert result is None
+        assert result == "$300.00"
 
     def test_extract_original_price_strips_whitespace(self, mock_soup_with_whitespace):
         """Test that extract_original_price strips whitespace."""
@@ -295,7 +295,7 @@ class TestScrapeAllProducts:
         assert result[0]["url"] == valid_urls[0]
         assert result[0]["product_name"] == "Gaming Laptop"
         assert result[0]["current_price"] == "$99.99"
-        
+
         # 2nd URL
         assert result[1]["url"] == valid_urls[1]
         assert result[1]["product_name"] == "Home Laptop"
@@ -304,7 +304,7 @@ class TestScrapeAllProducts:
     def test_scrape_all_products_empty_list(self):
         """Test that scrape_all_products handles empty URL list."""
         result = scrape_all_products([])
-        assert result == []
+        assert not result
 
     def test_scrape_all_products_invalid_type(self):
         """Test that scrape_all_products raises error when given None (e.g a failed DB query)."""
