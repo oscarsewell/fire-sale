@@ -23,7 +23,6 @@ def valid_url():
 @pytest.fixture
 def mock_html_content():
     """Fixture for mock HTML content."""
-    # Structure of prices needs to be altered to reflect the given website
     return """
     <html>
         <head>
@@ -33,6 +32,11 @@ def mock_html_content():
         <body>
             <span id="lblSellingPrice">$99.99</span>
             <span id="lblTicketPrice">$199.99</span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """
@@ -49,6 +53,11 @@ def mock_html_content_no_original_price():
         </head>
         <body>
             <span id="lblSellingPrice">$300.00</span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """
@@ -66,6 +75,11 @@ def mock_html_content_with_whitespace():
         <body>
             <span id="lblSellingPrice">  $50.00  </span>
             <span id="lblTicketPrice">  $400.00  </span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """

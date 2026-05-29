@@ -71,6 +71,18 @@ def extract_original_price(soup: BeautifulSoup) -> str:
     return extract_current_price(soup)
 
 
+def extract_currency_code(soup: BeautifulSoup) -> str:
+    """Extracts the currency code of the product from the parsed HTML."""
+    currency_meta = soup.find('meta', property='product:price:currency')
+    if currency_meta:
+        currency = currency_meta.get('content')
+        log.debug("Extracted currency code successfully: %s", currency)
+        return currency.strip()
+
+    log.warning("Currency code not found in HTML.")
+    return "N/A"
+
+
 def extract_website_name(url: str, soup: BeautifulSoup) -> str:
     """Extracts the name of the website from the parsed HTML."""
     og_site = soup.find('meta', property='og:site_name')
@@ -93,6 +105,7 @@ def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
         "product_name": extract_product_name(soup), 
         "current_price": extract_current_price(soup),
         "original_price": extract_original_price(soup),
+        "currency_code": extract_currency_code(soup),
         "url": url, 
         "website_name": extract_website_name(url, soup), 
         "scraped_at": datetime.now().isoformat()
@@ -137,6 +150,9 @@ if __name__ == "__main__":
 
     original_price = extract_original_price(parsed_content)
     print(f"Original Price: {original_price}")
+
+    currency_code = extract_currency_code(parsed_content)
+    print(f"Currency Code: {currency_code}")
 
     website_name = extract_website_name(urls[0], parsed_content)
     print(f"Website Name: {website_name}")

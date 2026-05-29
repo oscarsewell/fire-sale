@@ -11,6 +11,7 @@ from overclockers_scraper import (
     extract_product_name,
     extract_current_price,
     extract_original_price,
+    extract_currency_code,
     extract_website_name,
     extract_all_product_info,
     scrape_all_products,
@@ -122,6 +123,27 @@ class TestExtractOriginalPrice:
         assert result == "$400.00"
 
 
+class TestExtractCurrencyCode:
+    """Test cases for extracting currency code."""
+
+    def test_extract_currency_code_success(self, mock_soup):
+        """Test successful currency code extraction."""
+        result = extract_currency_code(mock_soup)
+        assert result == "USD"
+
+    def test_extract_currency_code_returns_string(self, mock_soup):
+        """Test that extract_currency_code returns a string."""
+        result = extract_currency_code(mock_soup)
+        assert isinstance(result, str)
+
+    def test_extract_currency_code_returns_na_when_missing(self):
+        """Test that extract_currency_code returns 'N/A' when element missing."""
+        html = "<html><body>Test</body></html>"
+        soup = BeautifulSoup(html, 'html.parser')
+        result = extract_currency_code(soup)
+        assert result == "N/A"
+
+
 class TestExtractWebsiteName:
     """Test cases for extracting website name."""
 
@@ -154,6 +176,7 @@ class TestExtractAllProductInfo:
             "product_name",
             "current_price",
             "original_price",
+            "currency_code",
             "url",
             "website_name",
             "scraped_at"
@@ -166,6 +189,7 @@ class TestExtractAllProductInfo:
         assert result["product_name"] == "Gaming Laptop"
         assert result["current_price"] == "$99.99"
         assert result["original_price"] == "$199.99"
+        assert result["currency_code"] == "USD"
         assert result["url"] == valid_url
         assert result["website_name"] == "store"
 
@@ -198,11 +222,12 @@ class TestScrapeAllProducts:
         assert result[0]["url"] == valid_urls[0]
         assert result[0]["product_name"] == "Gaming Laptop"
         assert result[0]["current_price"] == "$99.99"
-
+        assert result[0]["currency_code"] == "USD"
         # 2nd URL
         assert result[1]["url"] == valid_urls[1]
         assert result[1]["product_name"] == "Home Laptop"
         assert result[1]["current_price"] == "$300.00"
+        assert result[1]["currency_code"] == "USD"
 
     def test_scrape_all_products_empty_list(self):
         """Test that scrape_all_products handles empty URL list."""
