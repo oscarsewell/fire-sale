@@ -82,7 +82,6 @@ def parse_price(price_str: str) -> int:
 
     try:
         price_float = float(numeric_price)
-        
         # If amount has decimal places, convert to smallest currency unit (multiply by 100)
         # If amount is already in integer format, keep it as-is
         if '.' in numeric_price:
@@ -93,7 +92,6 @@ def parse_price(price_str: str) -> int:
             price_result = int(price_float)
             logger.info("Parsed price: amount=%d (already in integer format)",
                         price_result)
-        
         return price_result
 
     except ValueError as e:
