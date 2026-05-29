@@ -1,6 +1,7 @@
 # pylint: disable = redefined-outer-name
 """A script to scrape price and product data from the HTML content on a website."""
 
+import json
 import logging
 import re
 from datetime import datetime
@@ -72,6 +73,22 @@ def extract_original_price(soup: BeautifulSoup) -> str:
     return extract_current_price(soup)
 
 
+def extract_currency_code(soup: BeautifulSoup) -> str:
+    """Extracts the currency code from the structured data."""
+    script = soup.find("script", id="structuredDataLdJson")
+    if not script:
+        log.warning("Currency code script tag not found.")
+        return "N/A"
+    
+    data = json.loads(script.string)
+    if isinstance(data, list):
+        data = data[0]
+    
+    currency = data.get('offers')[0].get('priceCurrency')
+    log.debug("Extracted currency code successfully: %s", currency)
+    return currency
+
+
 def extract_website_name(url: str, soup: BeautifulSoup) -> str:
     """Extracts the name of the website from the parsed HTML."""
     og_site = soup.find('meta', property='og:site_name')
@@ -94,6 +111,7 @@ def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
         "product_name": extract_product_name(soup), 
         "current_price": extract_current_price(soup),
         "original_price": extract_original_price(soup),
+        "currency_code": extract_currency_code(soup),
         "url": url, 
         "website_name": extract_website_name(url, soup), 
         "scraped_at": datetime.now().isoformat()
@@ -138,6 +156,9 @@ if __name__ == "__main__":
 
     original_price = extract_original_price(parsed_content)
     print(f"Original Price: {original_price}")
+
+    currency_code = extract_currency_code(parsed_content)
+    print(f"Currency Code: {currency_code}")
 
     website_name = extract_website_name(urls[0], parsed_content)
     print(f"Website Name: {website_name}")

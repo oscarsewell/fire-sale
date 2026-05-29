@@ -23,12 +23,12 @@ def valid_url():
 @pytest.fixture
 def mock_html_content():
     """Fixture for mock HTML content."""
-    # Structure of prices needs to be altered to reflect the given website
     return """
     <html>
         <head>
             <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Gaming Laptop"/>
+            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
             <span class="price__amount " data-qa="price-current">
@@ -49,6 +49,7 @@ def mock_html_content_no_original_price():
     <html>
         <head>
             <meta property="og:title" content="Home Laptop"/>
+            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
             <span class="price__amount " data-qa="price-current">
@@ -67,6 +68,7 @@ def mock_html_content_with_whitespace():
         <head>
             <meta property="og:site_name" content="  Store With Spaces  "/>
             <meta property="og:title" content="  Gaming Laptop Pro  "/>
+            <meta property="product:price:currency" content="  USD  "/>
         </head>
         <body>
             <span class="price__amount " data-qa="price-current">
