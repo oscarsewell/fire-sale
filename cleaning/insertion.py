@@ -1,6 +1,9 @@
 """Function for inserting cleaned data into the database."""
 import psycopg2
 import logging
+import os
+from datetime import datetime, timezone, timedelta
+from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,8 +37,8 @@ def insert_product_into_db(
     try:
         with db_connection.cursor() as cursor:
             insert_query = """
-                INSERT INTO products (product_id, current_price, original_price, scraped_at)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO price_history (product_id, current_price, original_price, scraped_at)
+                VALUES (%s, %s, %s, %s)
             """
             cursor.execute(insert_query, (
                 product["product_id"],
@@ -52,20 +55,43 @@ def insert_product_into_db(
 
 
 if __name__ == "__main__":
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Debug: Check if env vars are loaded
+    db_name = os.getenv("DB_NAME")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+
+    logger.info(f"DB_NAME: {db_name}")
+    logger.info(f"DB_USER: {db_user}")
+    logger.info(f"DB_HOST: {db_host}")
+    logger.info(f"DB_PORT: {db_port}")
+
+    if not all([db_name, db_user, db_host, db_port]):
+        logger.error(
+            "Missing required environment variables. Please check your .env file.")
+        raise ValueError("Missing required database connection parameters")
+
     # Example usage
     db_connection = psycopg2.connect(
-        dbname="your_db_name",
-        user="your_db_user",
-        password="your_db_password",
-        host="your_db_host",
-        port="your_db_port"
+        dbname=db_name,
+        user=db_user,
+        password=db_password,
+        host=db_host,
+        port=db_port
     )
     product = {
-        "product_id": "123",
-        "product_name": "Apple iPhone 13 Pro Max",
-        "price": 899.00,
-        "currency": "USD",
-        "scraped_at": "2024-06-01T12:00:00Z"
+        "product_id": "1",
+        "product_name": "MSI GeForce RTX™ 5070 12G VENTUS 2X OC",
+        "current_price": 59999,
+        "original_price": 69999,
+        "currency_code": "GBP",
+        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070-12g-ventus-2x-oc-705988#colcode=70598803",
+        "website_name": "Ebuyer",
+        "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     }
     insert_product_into_db(product, db_connection)
     db_connection.close()
