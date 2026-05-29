@@ -1,27 +1,7 @@
 """test file for notifications.py"""
 import pytest
-from notifications import should_notify, should_notify_percentage, evaluate_notification, create_notification_message, send_discord_notification, send_notification, send_email_notification, process_notifications
+from notifications import should_notify_percentage, evaluate_notification, create_notification_message, send_discord_notification, send_notification, send_email_notification, process_notifications, get_currency_symbol
 from unittest.mock import patch
-
-
-def test_should_notify_when_price_below_target():
-    assert should_notify(90, 100) == True
-
-
-def test_should_not_notify_when_price_above_target():
-    assert should_notify(110, 100) == False
-
-
-def test_should_not_notify_if_price_missing():
-    assert should_notify(None, 100) == False
-
-
-def test_should_not_notify_if_target_missing():
-    assert should_notify(90, None) == False
-
-
-def test_should_notify_when_price_equals_target():
-    assert should_notify(100, 100) == True
 
 
 def test_should_notify_when_percentage_off_above_target():
@@ -45,20 +25,33 @@ def test_should_notify_when_price_equals_target():
 
 
 def test_evaluate_notification_should_notify_when_price_below_target():
-    tracking_record = {"product_url": "https://example.com",
-                       "target_price": 100, "notification_type": "email"}
-    product_record = {"product_name": "Test Product", "product_url": "https://example.com",
-                      "website_name": "Example", "latest_price": 90, "original_price": 120}
+    tracking_record = {
+        "user_id": 1,
+        "product_id": 1,
+        "target_discount": 20,
+        "notification_destination": "email",
+        "user_contact": "test@example.com",
+    }
+    product_record = {
+        "product_id": 1,
+        "product_url": "https://example.com/product",
+        "website_name": "Example Store",
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+    }
     result = evaluate_notification(tracking_record, product_record)
 
     assert result == {
-        "product_name": "Test Product",
-        "product_url": "https://example.com",
-        "website_name": "Example",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
-        "notification_type": "email"
+        "product_id": 1,
+        "product_url": "https://example.com/product",
+        "website_name": "Example Store",
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
+        "notification_type": "email",
+        "user_contact": "test@example.com",
     }
 
 
@@ -82,22 +75,25 @@ def test_evaluate_tracking_record_returns_none_when_price_is_above_target():
 
 def test_evaluate_tracking_record_includes_notification_destination():
     tracking_record = {
-        "product_url": "https://example.com/product",
-        "target_price": 100,
-        "notification_type": "discord",
+        "user_id": 1,
+        "product_id": 1,
+        "target_discount": 20,
+        "notification_destination": "email",
+        "user_contact": "test@example.com",
     }
 
     product_record = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
     }
 
     result = evaluate_notification(tracking_record, product_record)
 
-    assert result["notification_type"] == "discord"
+    assert result["notification_type"] == "email"
 
 
 def test_evaluate_tracking_record_returns_none_when_price_is_missing():
@@ -118,49 +114,55 @@ def test_evaluate_tracking_record_returns_none_when_price_is_missing():
     assert evaluate_notification(tracking_record, product_record) is None
 
 
-def test_build_notification_message_contains_product_name():
+def test_build_notification_message_contains_product_id():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1234,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
         "notification_type": "discord",
+        "user_contact": "123",
     }
 
     message = create_notification_message(notification)
 
-    assert "Example GPU" in message
+    assert "1234" in message
 
 
 def test_build_notification_message_contains_prices():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
-        "notification_type": "email",
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
+        "notification_type": "discord",
+        "user_contact": "123",
     }
 
     message = create_notification_message(notification)
 
-    assert "£90" in message
-    assert "£120" in message
+    assert "£80" in message
     assert "£100" in message
+    assert "20%" in message
 
 
 def test_build_notification_message_contains_product_url():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
         "notification_type": "discord",
+        "user_contact": "123",
     }
 
     message = create_notification_message(notification)
@@ -170,13 +172,15 @@ def test_build_notification_message_contains_product_url():
 
 def test_send_notification_routes_to_discord():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
         "notification_type": "discord",
+        "user_contact": "123",
     }
 
     with patch("notifications.send_discord_notification") as mock_discord:
@@ -188,13 +192,15 @@ def test_send_notification_routes_to_discord():
 
 def test_send_notification_routes_to_email():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
         "notification_type": "email",
+        "user_contact": "example.example@example.com",
     }
 
     with patch("notifications.send_email_notification") as mock_email:
@@ -206,13 +212,15 @@ def test_send_notification_routes_to_email():
 
 def test_send_notification_raises_error_for_unknown_type():
     notification = {
-        "product_name": "Example GPU",
+        "product_id": 1,
         "product_url": "https://example.com/product",
         "website_name": "Example Store",
-        "latest_price": 90,
-        "original_price": 120,
-        "target_price": 100,
+        "currency": "GBP",
+        "latest_price": 80,
+        "original_price": 100,
+        "target_discount": 20,
         "notification_type": "sms",
+        "user_contact": "123",
     }
 
     with pytest.raises(ValueError, match="Unsupported notification type"):
@@ -221,19 +229,20 @@ def test_send_notification_raises_error_for_unknown_type():
 
 @patch("notifications.send_notification")
 def test_process_notifications_sends_for_matching_product_below_target(mock_send):
-    tracking_records = [
-        {
-            "product_url": "https://example.com/product",
-            "target_price": 100,
-            "notification_type": "email",
-        }
-    ]
+    tracking_records = [{
+        "user_id": 1,
+        "product_id": 1,
+        "target_discount": 20,
+        "notification_destination": "email",
+        "user_contact": "test@example.com",
+    }]
 
     product_records = [
         {
-            "product_name": "Example GPU",
+            "product_id": 1,
             "product_url": "https://example.com/product",
             "website_name": "Example Store",
+            "currency": "GBP",
             "latest_price": 90,
             "original_price": 120,
         }
@@ -295,3 +304,33 @@ def test_process_notifications_skips_when_no_matching_product_record(mock_send):
 
     assert result == []
     mock_send.assert_not_called()
+
+
+def test_get_currency_symbol_returns_gbp_symbol():
+    assert get_currency_symbol("GBP") == "£"
+
+
+def test_get_currency_symbol_returns_usd_symbol():
+    assert get_currency_symbol("USD") == "$"
+
+
+def test_get_currency_symbol_falls_back_to_code_for_unknown_currency():
+    assert get_currency_symbol("UNKNOWN") == "UNKNOWN"
+
+
+def test_send_discord_notification_prints_message(capsys):
+    send_discord_notification("Test Discord message")
+
+    captured = capsys.readouterr()
+
+    assert "Sending Discord notification" in captured.out
+    assert "Test Discord message" in captured.out
+
+
+def test_send_email_notification_prints_message(capsys):
+    send_email_notification("Test Email message")
+
+    captured = capsys.readouterr()
+
+    assert "Sending Email notification" in captured.out
+    assert "Test Email message" in captured.out

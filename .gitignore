@@ -9,3 +9,6 @@ terraform.tfstate.backup
 .terraform.lock.hcl
 *.tfvars
 .env
+tests/__pycache__/
+notifications/__pycache__/
+cleaning/__pycache__/
