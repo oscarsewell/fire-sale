@@ -52,7 +52,7 @@ def clean_product_name(product_name: str) -> str:
 
 
 def parse_price(price_str: str) -> int:
-    """Parses a price string and returns the numeric price as an int per pence."""
+    """Parses a price string and returns the numeric price as an int in the smallest currency unit."""
     logger.debug("Parsing price string: '%s'", price_str)
 
     if not isinstance(price_str, str):
