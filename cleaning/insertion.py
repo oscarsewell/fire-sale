@@ -89,8 +89,7 @@ if __name__ == "__main__":
         "current_price": 59999,
         "original_price": 69999,
         "currency_code": "GBP",
-        "url": """https://www.ebuyer.com/msi-msi-geforce-rtx-5070
-        -12g-ventus-2x-oc-705988#colcode=70598803""",
+        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070-12g-ventus-2x-oc-705988#colcode=70598803",
         "website_name": "Ebuyer",
         "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     }
