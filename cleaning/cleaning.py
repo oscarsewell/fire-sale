@@ -233,13 +233,6 @@ def clean_product_data(product: dict) -> dict:
     return product
 
 
-def insert_product_into_db(product: dict, db_connection: ):
-    """Inserts the cleaned product data into the database."""
-    logger.info("Inserting product into database: %r", product)
-    # Placeholder for database insertion logic
-    pass
-
-
 if __name__ == "__main__":
     example_product = {
         "product_id": 67,

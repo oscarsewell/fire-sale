@@ -8,6 +8,7 @@ from cleaning import (
     calculate_discount_percentage,
     convert_to_datetime,
     valid_url,
+    clean_product_data,
 )
 
 
@@ -229,3 +230,87 @@ def test_convert_to_datetime_invalid_format_raises_error():
         convert_to_datetime("2024/06/01T12:00:00Z")
     with pytest.raises(ValueError):
         convert_to_datetime("June 1, 2024 12:00:00")
+
+
+def test_clean_product_data_valid_input():
+    """Tests that valid product data is cleaned successfully."""
+    product = {
+        "product_name": "  Apple iPhone 13 Pro Max  ",
+        "original_price": "$1099.00",
+        "current_price": "$999.00",
+        "url": "https://www.example.com/product/123",
+        "website_name": "ExampleStore",
+        "scraped_at": "2024-06-01T12:00:00Z"
+    }
+    result = clean_product_data(product)
+    assert result["product_name"] == "Apple iPhone 13 Pro Max"
+    assert result["original_price"] == 1099.00
+    assert result["current_price"] == 999.00
+    assert result["currency"] == "$"
+    assert result["scraped_at"] == datetime(
+        2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
+
+
+def test_clean_product_data_non_dict_raises_error():
+    """Tests that non-dict input raises a TypeError."""
+    with pytest.raises(TypeError):
+        clean_product_data("not a dict")
+    with pytest.raises(TypeError):
+        clean_product_data(None)
+    with pytest.raises(TypeError):
+        clean_product_data(["list", "of", "items"])
+
+
+def test_clean_product_data_missing_scraped_at_raises_error():
+    """Tests that missing scraped_at raises a ValueError."""
+    product = {
+        "product_name": "Apple iPhone 13 Pro Max",
+        "original_price": "$1099.00",
+        "current_price": "$999.00",
+        "url": "https://www.example.com/product/123",
+        "website_name": "ExampleStore"
+    }
+    with pytest.raises(ValueError, match="missing required keys"):
+        clean_product_data(product)
+
+
+def test_clean_product_data_invalid_price_raises_error():
+    """Tests that invalid prices raise a ValueError."""
+    product = {
+        "product_name": "Apple iPhone 13 Pro Max",
+        "original_price": "1099.00",
+        "current_price": "$999.00",
+        "url": "https://www.example.com/product/123",
+        "website_name": "ExampleStore",
+        "scraped_at": "2024-06-01T12:00:00Z"
+    }
+    with pytest.raises(ValueError):
+        clean_product_data(product)
+
+
+def test_clean_product_data_invalid_datetime_raises_error():
+    """Tests that invalid datetime format raises a ValueError."""
+    product = {
+        "product_name": "Apple iPhone 13 Pro Max",
+        "original_price": "$1099.00",
+        "current_price": "$999.00",
+        "url": "https://www.example.com/product/123",
+        "website_name": "ExampleStore",
+        "scraped_at": "2024/06/01 12:00:00"
+    }
+    with pytest.raises(ValueError):
+        clean_product_data(product)
+
+
+def test_clean_product_data_empty_product_name():
+    """Tests that empty product name raises a ValueError."""
+    product = {
+        "product_name": "   ",
+        "original_price": "$1099.00",
+        "current_price": "$999.00",
+        "url": "https://www.example.com/product/123",
+        "website_name": "ExampleStore",
+        "scraped_at": "2024-06-01T12:00:00Z"
+    }
+    with pytest.raises(ValueError):
+        clean_product_data(product)
