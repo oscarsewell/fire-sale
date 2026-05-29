@@ -1,6 +1,5 @@
 """Tests for the cleaning script."""
 from datetime import datetime, timezone, timedelta
-from cleaning import clean_product_data
 import pytest
 from cleaning import (
     clean_product_name,
@@ -9,6 +8,7 @@ from cleaning import (
     calculate_discount_percentage,
     convert_to_datetime,
     valid_url,
+    clean_product_data
 )
 
 
@@ -67,10 +67,14 @@ def test_parse_price_non_string_raises_error():
 
 
 def test_parse_price_integer_format():
-    """Tests parse_price with integer-only amounts (no decimal places)."""
-    assert parse_price("₹1000") == 1000
-    assert parse_price("¥5000") == 5000
-    assert parse_price("₹99999") == 99999
+    """Tests parse_price with integer-only amounts (no decimal places).
+
+    Even without decimal places, values are treated as major currency units
+    and multiplied by 100 for consistency.
+    """
+    assert parse_price("₹1000") == 100000
+    assert parse_price("¥5000") == 500000
+    assert parse_price("₹99999") == 9999900
 
 
 def test_parse_price_with_commas():

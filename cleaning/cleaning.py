@@ -19,7 +19,7 @@ import logging
 from datetime import datetime
 import re
 import regex
-from currency_symbols import CurrencySymbols
+import iso4217
 
 # Configure logging
 logging.basicConfig(
@@ -52,7 +52,17 @@ def clean_product_name(product_name: str) -> str:
 
 
 def parse_price(price_str: str) -> int:
-    """Parses a price string and returns the numeric price as an int in the smallest currency unit."""
+    """Parses a price string and returns the numeric price as an int.
+
+    Always interprets the input as a major currency unit and converts to 
+    the smallest unit (multiply by 100). For example:
+    - "$10.00" → 1000 (10 dollars = 1000 cents)
+    - "$10" → 1000 (10 dollars = 1000 cents)  
+    - "₹1000" → 100000 (1000 rupees = 100000 paise)
+
+    This ensures consistent behavior regardless of whether the input
+    includes decimal places.
+    """
     logger.debug("Parsing price string: '%s'", price_str)
 
     if not isinstance(price_str, str):
@@ -82,16 +92,10 @@ def parse_price(price_str: str) -> int:
 
     try:
         price_float = float(numeric_price)
-        # If amount has decimal places, convert to smallest currency unit (multiply by 100)
-        # If amount is already in integer format, keep it as-is
-        if '.' in numeric_price:
-            price_result = int(round(price_float * 100))
-            logger.info("Parsed price: amount=%.2f (converted to smallest unit=%d)",
-                        price_float, price_result)
-        else:
-            price_result = int(price_float)
-            logger.info("Parsed price: amount=%d (already in integer format)",
-                        price_result)
+        # Always convert to smallest currency unit (multiply by 100)
+        price_result = int(round(price_float * 100))
+        logger.info("Parsed price: amount=%.2f (converted to smallest unit=%d)",
+                    price_float, price_result)
         return price_result
 
     except ValueError as e:
@@ -102,7 +106,7 @@ def parse_price(price_str: str) -> int:
 
 def clean_currency(currency: str) -> str:
     """Cleans the currency string by stripping whitespace and validating it
-    with currency_symbols."""
+    against ISO 4217 currency codes."""
     logger.debug("Cleaning currency: '%s'", currency)
 
     if not isinstance(currency, str):
@@ -111,7 +115,9 @@ def clean_currency(currency: str) -> str:
 
     cleaned_currency = currency.strip().upper()
 
-    if CurrencySymbols.get_symbol(cleaned_currency) is None:
+    try:
+        iso4217.Currency(cleaned_currency)
+    except (KeyError, ValueError):
         logger.error("Invalid currency code: '%s'", cleaned_currency)
         raise ValueError(f"Invalid currency code: {cleaned_currency}")
 
