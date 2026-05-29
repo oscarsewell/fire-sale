@@ -5,9 +5,11 @@ and convert timestamp strings to datetime objects."""
 
 # dictionary format:
 # {
+# "product_id": 67
 # "product_name": "",
 # "original_price": "$999.00"
 # "current_price": "$899.00",
+# "currency_code"
 # "url": "",
 # "website_name": "EBuyer",
 # "scraped_at": "[timestamp]"
@@ -231,8 +233,16 @@ def clean_product_data(product: dict) -> dict:
     return product
 
 
+def insert_product_into_db(product: dict, db_connection: ):
+    """Inserts the cleaned product data into the database."""
+    logger.info("Inserting product into database: %r", product)
+    # Placeholder for database insertion logic
+    pass
+
+
 if __name__ == "__main__":
     example_product = {
+        "product_id": 67,
         "product_name": "  Apple iPhone 13 Pro Max  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",
