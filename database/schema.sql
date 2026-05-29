@@ -16,6 +16,7 @@ CREATE TABLE users (
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
   product_url VARCHAR(2048) NOT NULL UNIQUE,
+  product_name VARCHAR(255) NOT NULL,
   site_name VARCHAR(255) NOT NULL,
   currency VARCHAR(3) NOT NULL
 );

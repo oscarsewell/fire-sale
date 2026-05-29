@@ -22,21 +22,6 @@ variable "aws_region" {
 	default     = "eu-west-2"
 }
 
-variable "vpc_id" {
-	description = "VPC ID used for RDS and ECS tasks."
-	type        = string
-}
-
-variable "subnet_ids" {
-	description = "Subnet IDs for RDS and ECS Fargate tasks."
-	type        = list(string)
-}
-
-variable "ecs_subnet_ids" {
-	description = "Subnet IDs for ECS Fargate tasks (dashboard and Discord bot)."
-	type        = list(string)
-}
-
 # ── Scraper configuration ─────────────────────────────────────────────────────
 
 variable "scraper_names" {

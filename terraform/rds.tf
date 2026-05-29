@@ -1,161 +1,79 @@
 # Data source for c23 VPC
 data "aws_vpc" "main" {
-  filter {
-    name   = "tag:Name"
-    values = ["c23-VPC"]
-  }
+	filter {
+		name   = "tag:Name"
+		values = ["c23-VPC"]
+	}
 }
 
 # Data sources for c23 public subnets
 data "aws_subnets" "public" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.main.id]
-  }
+	filter {
+		name   = "vpc-id"
+		values = [data.aws_vpc.main.id]
+	}
 
-  filter {
-    name   = "tag:Name"
-    values = ["c23-public-subnet-*"]
-  }
+	filter {
+		name   = "tag:Name"
+		values = ["c23-public-subnet-*"]
+	}
 }
 
-# Security group for RDS
+# RDS security group — ingress rules reference the Lambda VPC SG (lambdas.tf)
+# and ECS SG (ecs.tf); Terraform resolves cross-file dependencies automatically.
+
 resource "aws_security_group" "rds" {
-  name        = "c23-fire-sale-rds-sg"
-  description = "Security group for Postgres RDS"
-  vpc_id      = data.aws_vpc.main.id
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # restrict to personal IP/VPC in production so it can't be brute forced
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "c23-fire-sale-rds-sg"
-  }
+	name        = "${var.project_name}-${var.environment}-rds"
+	description = "Allow inbound PostgreSQL from VPC-attached Lambda functions and ECS tasks."
+	vpc_id      = data.aws_vpc.main.id
 }
 
-# DB subnet group
-resource "aws_db_subnet_group" "rds" {
-  name       = "c23-fire-sale-rds-subnet-group"
-  subnet_ids = data.aws_subnets.public.ids
-
-  tags = {
-    Name = "c23-fire-sale-rds-subnet-group"
-  }
+resource "aws_vpc_security_group_ingress_rule" "rds_from_ecs" {
+	security_group_id            = aws_security_group.rds.id
+	referenced_security_group_id = aws_security_group.ecs.id
+	from_port                    = 5432
+	to_port                      = 5432
+	ip_protocol                  = "tcp"
+	description                  = "PostgreSQL from ECS tasks."
 }
 
-# RDS Postgres instance
-resource "aws_db_instance" "postgres" {
-  identifier     = "c23-fire-sale-postgres"
-  engine         = "postgres"
-  engine_version = "15.4"
-  instance_class = "db.t3.micro"
-
-  db_name  = "firesale"
-  username = "postgres"
-  password = random_password.db_password.result
-
-  allocated_storage = 20
-  storage_type      = "gp3"
-
-  publicly_accessible    = true
-  db_subnet_group_name   = aws_db_subnet_group.rds.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
-
-  skip_final_snapshot = true
-
-  enabled_cloudwatch_logs_exports = ["postgresql"]
-
-  tags = {
-    Name = "c23-fire-sale-postgres"
-  }
-
-  depends_on = [aws_db_subnet_group.rds]
+resource "aws_vpc_security_group_ingress_rule" "rds_from_internet" {
+	security_group_id = aws_security_group.rds.id
+	cidr_ipv4         = "0.0.0.0/0"
+	from_port         = 5432
+	to_port           = 5432
+	ip_protocol       = "tcp"
+	description       = "PostgreSQL from Lambda functions (no VPC). Restrict to known CIDRs in production."
 }
 
-# Random password for database
-resource "random_password" "db_password" {
-  length           = 32
-  special          = true
-  override_special = "!#$%^&*()-_=+[]{}:;,.?"
+resource "aws_db_subnet_group" "main" {
+	name       = "${var.project_name}-${var.environment}"
+	subnet_ids = data.aws_subnets.public.ids
 }
 
-# Store password in AWS Secrets Manager
-resource "aws_secretsmanager_secret" "db_password" {
-  name                    = "c23-fire-sale/rds/password"
+resource "aws_db_instance" "main" {
+	identifier = "${var.project_name}-${var.environment}"
 
-  tags = {
-    Name = "c23-fire-sale-rds-password"
-  }
-}
+	engine         = "postgres"
+	engine_version = "16"
+	instance_class = var.rds_instance_class
 
-resource "aws_secretsmanager_secret_version" "db_password" {
-  secret_id = aws_secretsmanager_secret.db_password.id
-  secret_string = jsonencode({
-    username = "postgres"
-    password = random_password.db_password.result
-    engine   = "postgres"
-    host     = aws_db_instance.postgres.address
-    port     = 5432
-    dbname   = "firesale"
-  })
-}
+	db_name  = var.rds_db_name
+	username = var.rds_master_username
 
-# IAM role for ECS and Lambda to access RDS
-resource "aws_iam_role" "rds_access" {
-  name = "c23-fire-sale-rds-access-role"
+	# Secrets Manager manages the master password; use the output
+	# rds_master_user_secret_arn as var.rds_secret_arn in other modules if needed.
+	manage_master_user_password = true
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = ["ecs-tasks.amazonaws.com", "lambda.amazonaws.com"]
-        }
-      }
-    ]
-  })
-}
+	allocated_storage      = 20
+	db_subnet_group_name   = aws_db_subnet_group.main.name
+	vpc_security_group_ids = [aws_security_group.rds.id]
 
-# Outputs
-output "rds_endpoint" {
-  description = "RDS endpoint for remote connection"
-  value       = aws_db_instance.postgres.endpoint
-  sensitive   = false
-}
+	iam_database_authentication_enabled = true
+	storage_encrypted                   = true
+	publicly_accessible                 = true
 
-output "rds_address" {
-  description = "RDS address"
-  value       = aws_db_instance.postgres.address
-  sensitive   = false
-}
-
-output "rds_port" {
-  description = "RDS port"
-  value       = aws_db_instance.postgres.port
-  sensitive   = false
-}
-
-output "rds_database_name" {
-  description = "RDS database name"
-  value       = aws_db_instance.postgres.db_name
-  sensitive   = false
-}
-
-output "db_secret_arn" {
-  description = "ARN of the database password secret"
-  value       = aws_secretsmanager_secret.db_password.arn
-  sensitive   = false
+	# Flip both to true before going to production.
+	deletion_protection = false
+	skip_final_snapshot = true
 }
