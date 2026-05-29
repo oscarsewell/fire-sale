@@ -18,16 +18,14 @@ def fetch_html_content(url: str) -> str:
     """Fetches the HTML content for a given product."""
     if not isinstance(url, str):
         raise TypeError("URL must be a string.")
-
     try:
         response = requests.get(url, impersonate="chrome", timeout=10)
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
+        return response.text
     except requests.RequestException as e:
-        log.exception("Failed to fetch HTML content from URL: %s", url)
+        log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
-
-    return response.text
 
 
 def parse_html_content(content: str) -> BeautifulSoup:
@@ -51,10 +49,11 @@ def extract_product_name(soup: BeautifulSoup) -> str:
 
 def extract_current_price(soup: BeautifulSoup) -> str:
     """Extracts the current price of the product from the parsed HTML."""
-    price = soup.find("span", class_="price")
-    if price:
+    price_span = soup.main.find("span", attrs={"data-price-type": "finalPrice"})
+    if price_span:
+        price = price_span.find("span", class_="price")
         log.debug("Extracted current price successfully: %s", price.text.strip())
-        return price.get_text().strip()
+        return price.text.strip()
 
     log.warning("Current price not found.")
     return "N/A"
@@ -62,9 +61,9 @@ def extract_current_price(soup: BeautifulSoup) -> str:
 
 def extract_original_price(soup: BeautifulSoup) -> str:
     """Extracts the original price of the product from the parsed HTML."""
-    original_price = soup.find("span", class_="wasPrice rrpPrice")
-
-    if original_price:
+    price_span = soup.main.find("span", attrs={"data-price-type": "oldPrice"})
+    if price_span:
+        original_price = price_span.find("span", class_="price")
         log.debug("Extracted original price successfully: %s", original_price.text.strip())
         return original_price.text.strip()
 
@@ -116,7 +115,7 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
             products.append(product_info)
             log.info("Successfully scraped product information from URL: %s", url)
         except Exception as e:
-            log.error("Failed to scrape URL: %s", url, e)
+            log.error("Failed to scrape URL: %s - %s", url, e)
 
     return products
 
@@ -124,7 +123,7 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
 if __name__ == "__main__":
     # Example usage
     urls = [
-        "https://www.scan.co.uk/products/16-3xs-vengeance-5090-2k-qhdplus-240hz-24gb-nvidia-rtx-5090-intel-core-ultra-9-275hx-64gb-ddr5-2tb-m"
+        "https://www.awd-it.co.uk/awd-lian-li-o11-mini-snow-edition-ryzen-5-5600x-4.6ghz-gigabyte-b550-vison-nvidia-geforce-rtx-3060-vision-12gb-gaming-pc.html"
     ]
 
     html_content = fetch_html_content(urls[0])

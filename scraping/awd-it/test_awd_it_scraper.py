@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 from bs4 import BeautifulSoup
-from scan_scraper import (
+from awd_it_scraper import (
     fetch_html_content,
     parse_html_content,
     extract_product_name,
@@ -19,7 +19,7 @@ from scan_scraper import (
 class TestFetchHTMLContent:
     """Test cases for fetching HTML content from URLs."""
 
-    @patch("scan_scraper.requests.get")
+    @patch("awd_it_scraper.requests.get")
     def test_fetch_html_content_success(self, mock_get, valid_url):
         """Test successful HTML content fetching."""
         mock_response = MagicMock()
@@ -31,7 +31,7 @@ class TestFetchHTMLContent:
         assert "<html>" in result
         mock_get.assert_called_once_with(valid_url, impersonate="chrome", timeout=10)
 
-    @patch("scan_scraper.requests.get")
+    @patch("awd_it_scraper.requests.get")
     def test_fetch_html_content_raises_on_bad_status(self, mock_get, valid_url):
         """Test that fetch_html_content raises error on bad HTTP status."""
         mock_get.return_value.raise_for_status.side_effect = Exception("404 Not Found")
@@ -56,7 +56,10 @@ class TestParseHTMLContent:
         """Test that parse_html_content correctly parses HTML."""
         soup = parse_html_content(mock_html_content)
         assert soup.find('meta', property='og:title')['content'] == "Gaming Laptop"
-        assert soup.find('span', class_='price').text == "$99.99"
+
+        price_span = soup.main.find("span", attrs={"data-price-type": "finalPrice"})
+        if price_span:
+            assert price_span.find("span", class_="price").text.strip() == "$99.99"
 
     @pytest.mark.parametrize("invalid_content", ["", "<incomplete>"])
     def test_parse_html_content_edge_cases(self, invalid_content):

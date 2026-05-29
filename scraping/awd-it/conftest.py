@@ -28,20 +28,21 @@ def mock_html_content():
     return """
     <html>
         <head>
-            <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Gaming Laptop"/>
         </head>
         <body>
-            <span class="price">
-                <small>$</small>99.<small>99</small>
-            </span>
-            <span class="wasPrice rrpPrice">
-                <span class="was" title="Recommended Retail Price">RRP:</span>
-                    <small>$</small>199.<small>99</small>
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$99.99</span>
+                </span>
+                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$199.99</span>
+                </span>
+            </main>
         </body>
     </html>
     """
+
 
 @pytest.fixture
 def mock_html_content_no_original_price():
@@ -52,9 +53,11 @@ def mock_html_content_no_original_price():
             <meta property="og:title" content="Home Laptop"/>
         </head>
         <body>
-            <span class="price">
-                <small>$</small>300.<small>00</small>
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$300.00</span>
+                </span>
+            </main>
         </body>
     </html>
     """
@@ -66,17 +69,17 @@ def mock_html_content_with_whitespace():
     return """
     <html>
         <head>
-            <meta property="og:site_name" content="  Store With Spaces  "/>
             <meta property="og:title" content="  Gaming Laptop Pro  "/>
         </head>
         <body>
-            <span class="price">
-                <small>$</small>50.<small>00</small>
-            </span>
-            <span class="wasPrice rrpPrice">
-                <span class="was" title="Recommended Retail Price">RRP:</span>
-                    <small>$</small>400.<small>00</small>
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">  $50.00  </span>
+                </span>
+                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
+                    <span class="price">  $400.00  </span>
+                </span>
+            </main>
         </body>
     </html>
     """
@@ -104,8 +107,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
-    with patch("scan_scraper.fetch_html_content") as mock_fetch, \
-         patch("scan_scraper.parse_html_content") as mock_parse:
+    with patch("awd_it_scraper.fetch_html_content") as mock_fetch, \
+         patch("awd_it_scraper.parse_html_content") as mock_parse:
         # To handle multiple URLs
         mock_fetch.side_effect = [mock_html_content, mock_html_content_no_original_price]
         mock_parse.side_effect = [mock_soup, mock_soup_no_original_price]
