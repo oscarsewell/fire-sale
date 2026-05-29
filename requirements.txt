@@ -2,3 +2,7 @@ pytest
 pylint
 beautifulsoup4
 requests
+pytest-cov
+regex
+curl_cffi
+currency-symbols
