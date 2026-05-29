@@ -1,10 +1,11 @@
 """Tests for the cleaning script."""
 from datetime import datetime, timezone, timedelta
+from cleaning import clean_product_data
 import pytest
 from cleaning import (
     clean_product_name,
     parse_price,
-    normalize_product_prices,
+    clean_currency,
     calculate_discount_percentage,
     convert_to_datetime,
     valid_url,
@@ -43,16 +44,14 @@ def test_clean_product_name_over_max_length_raises_error():
 
 def test_parse_price():
     """Tests the parse_price function."""
-    assert parse_price("$999.00") == ("$", 999.00)
-    assert parse_price("£899.00") == ("£", 899.00)
-    assert parse_price("€799.00") == ("€", 799.00)
-    assert parse_price("699.00 €") == ("€", 699.00)
+    assert parse_price("$999.00") == 99900
+    assert parse_price("£899.00") == 89900
+    assert parse_price("€799.00") == 79900
+    assert parse_price("699.00 €") == 69900
 
 
 def test_parse_price_invalid_format_raises_error():
     """Tests that an invalid price format raises a ValueError."""
-    with pytest.raises(ValueError):
-        parse_price("999.00")
     with pytest.raises(ValueError):
         parse_price("$999.00 USD")
     with pytest.raises(ValueError):
@@ -67,97 +66,21 @@ def test_parse_price_non_string_raises_error():
         parse_price(None)
 
 
-def test_normalize_product_prices():
-    """Tests the normalize_product_prices function."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": "$999.00",
-        "current_price": "$899.00",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
-    normalized_product = normalize_product_prices(product)
-    assert normalized_product["original_price"] == 999.00
-    assert normalized_product["current_price"] == 899.00
-    assert normalized_product["currency"] == "$"
+def test_clean_currency_valid():
+    """Tests the clean_currency function."""
+    assert clean_currency("USD") == "USD"
+    assert clean_currency("usd") == "USD"
+    assert clean_currency(" UsD ") == "USD"
 
 
-def test_normalize_product_prices_wrong_type_raises_error():
-    """Tests that a non-dictionary product raises a TypeError."""
-    with pytest.raises(TypeError):
-        normalize_product_prices("not a dictionary")
-    with pytest.raises(TypeError):
-        normalize_product_prices(None)
-
-
-def test_normalize_product_prices_invalid_price_raises_error():
-    """Tests that an invalid price format raises a ValueError."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": "999.00",
-        "current_price": "$899.00",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
+def test_clean_currency_invalid_raises_error():
+    """Tests that an invalid currency code raises a ValueError."""
     with pytest.raises(ValueError):
-        normalize_product_prices(product)
-
-
-def test_normalize_product_prices_non_string_price_raises_error():
-    """Tests that a non-string price raises a TypeError."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": 999.00,
-        "current_price": "$899.00",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
-    with pytest.raises(TypeError):
-        normalize_product_prices(product)
-
-
-def test_normalize_product_prices_missing_price_raises_error():
-    """Tests that a missing price raises a ValueError."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
+        clean_currency("U")
     with pytest.raises(ValueError):
-        normalize_product_prices(product)
-
-
-def test_normalize_product_prices_invalid_currency_raises_error():
-    """Tests that an invalid currency symbol raises a ValueError."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": "999.00",
-        "current_price": "899.00",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
+        clean_currency("US")
     with pytest.raises(ValueError):
-        normalize_product_prices(product)
-
-
-def test_normalize_product_prices_different_currencies_raises_error():
-    """Tests that different currency symbols in original_price 
-    and current_price raise a ValueError."""
-    product = {
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": "$999.00",
-        "current_price": "£899.00",
-        "url": "https://www.example.com/product/123",
-        "website_name": "EBuyer",
-        "scraped_at": "2024-06-01T12:00:00Z"
-    }
-    with pytest.raises(ValueError):
-        normalize_product_prices(product)
+        clean_currency("USDA")
 
 
 def test_valid_url():
