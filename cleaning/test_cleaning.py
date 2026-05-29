@@ -5,7 +5,6 @@ from cleaning import (
     clean_product_name,
     parse_price,
     clean_currency,
-    calculate_discount_percentage,
     convert_to_datetime,
     valid_url,
     clean_product_data
@@ -152,35 +151,6 @@ def test_valid_url_non_string_raises_error():
         valid_url(123)
     with pytest.raises(TypeError):
         valid_url(None)
-
-
-def test_calculate_discount_percentage():
-    """Tests the calculate_discount_percentage function."""
-    assert calculate_discount_percentage(1099.00, 999.00) == 9.10
-    assert calculate_discount_percentage(899.00, 799.00) == 11.12
-    assert calculate_discount_percentage(799.00, 699.00) == 12.52
-
-
-def test_calculate_discount_percentage_invalid_type_raises_error():
-    """Tests that non-numeric prices raise a TypeError."""
-    with pytest.raises(TypeError):
-        calculate_discount_percentage("999.00", 899.00)
-    with pytest.raises(TypeError):
-        calculate_discount_percentage(999.00, "899.00")
-    with pytest.raises(TypeError):
-        calculate_discount_percentage(None, 899.00)
-    with pytest.raises(TypeError):
-        calculate_discount_percentage(999.00, None)
-
-
-def test_calculate_discount_percentage_invalid_value_raises_error():
-    """Tests that invalid price values raise a ValueError."""
-    with pytest.raises(ValueError):
-        calculate_discount_percentage(0, 899.00)
-    with pytest.raises(ValueError):
-        calculate_discount_percentage(-999.00, 899.00)
-    with pytest.raises(ValueError):
-        calculate_discount_percentage(999.00, -899.00)
 
 
 def test_convert_to_datetime():

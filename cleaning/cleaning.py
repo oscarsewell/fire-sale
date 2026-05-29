@@ -125,32 +125,6 @@ def clean_currency(currency: str) -> str:
     return cleaned_currency
 
 
-def calculate_discount_percentage(original_price: float, current_price: float) -> float:
-    """Calculates the discount percentage."""
-    if not isinstance(original_price, (int, float)) or not isinstance(current_price, (int, float)):
-        logger.error("Non-numeric prices provided: original=%r, current=%r",
-                     original_price, current_price)
-        raise TypeError("Prices must be numeric.")
-
-    logger.debug("Calculating discount: original=%.2f, current=%.2f",
-                 original_price, current_price)
-
-    if original_price <= 0:
-        logger.error("Original price is not positive: %.2f", original_price)
-        raise ValueError("Original price must be greater than zero.")
-
-    if current_price < 0:
-        logger.error("Current price is negative: %.2f", current_price)
-        raise ValueError("Current price cannot be negative.")
-
-    discount_percentage = (
-        (original_price - current_price) / original_price
-    ) * 100
-    result = round(discount_percentage, 2)
-    logger.info("Discount calculated: %.2f%%", result)
-    return result
-
-
 def convert_to_datetime(scraped_at: str) -> datetime:
     """Converts the scraped_at string to a datetime object."""
     logger.debug("Converting timestamp: '%s'", scraped_at)
