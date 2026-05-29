@@ -1,6 +1,6 @@
 """Tests for the insertion module."""
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import MagicMock
 import pytest
 import psycopg2
 
@@ -32,8 +32,8 @@ def test_insert_product_into_db_valid_input():
 
     mock_connection.cursor.assert_called_once()
     expected_query = """
-                INSERT INTO products (product_id, current_price, original_price, scraped_at)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO price_history (product_id, current_price, original_price, scraped_at)
+                VALUES (%s, %s, %s, %s)
             """
     mock_cursor.execute.assert_called_once_with(
         expected_query,
