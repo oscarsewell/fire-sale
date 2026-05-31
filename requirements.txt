@@ -6,3 +6,6 @@ pytest-cov
 regex
 curl_cffi
 currency-symbols
+python-dotenv
+discord.py
+psycopg2-binary
