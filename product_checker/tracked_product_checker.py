@@ -15,9 +15,24 @@ secrets_client = boto3.client("secretsmanager")
 
 
 def get_base_url(url: str) -> str:
-    """Extract base URL (scheme + netloc) from a full product URL."""
+    """Extract base domain from a product URL."""
+    url = url.strip()
+    # Check for invalid characters (spaces)
+    if ' ' in url:
+        raise ValueError(f"Invalid URL: {url} (contains spaces)")
+
+    # Add scheme if missing for proper parsing
+    url = url.strip()
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
     parsed = urlparse(url)
-    return f"{parsed.scheme}://{parsed.netloc}"
+
+    # Verify netloc is not empty
+    if not parsed.netloc:
+        raise ValueError(f"Invalid URL: could not parse domain from {url}")
+
+    return parsed.netloc
 
 
 def get_db_credentials() -> dict:
@@ -130,6 +145,8 @@ def get_tracked_products_by_site() -> dict:
 
 
 if __name__ == "__main__":
-    load_dotenv()  # Load .env file if it exists
-    products_by_site = get_tracked_products_by_site()
-    print(json.dumps(products_by_site, indent=2))
+    # load_dotenv()  # Load .env file if it exists
+    # products_by_site = get_tracked_products_by_site()
+    # print(json.dumps(products_by_site, indent=2))
+    # Example usage
+    print(get_base_url("asfsdfafa"))
