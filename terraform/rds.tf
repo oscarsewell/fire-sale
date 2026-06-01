@@ -88,10 +88,10 @@ resource "aws_secretsmanager_secret" "rds_connection" {
 resource "aws_secretsmanager_secret_version" "rds_connection" {
 	secret_id = aws_secretsmanager_secret.rds_connection.id
 	secret_string = jsonencode({
-		host     = aws_db_instance.main.address
-		port     = aws_db_instance.main.port
-		dbname   = aws_db_instance.main.db_name
-		username = aws_db_instance.main.master_username
-		password = aws_db_instance.main.master_user_secret[0].secret_string
+		host               = aws_db_instance.main.address
+		port               = aws_db_instance.main.port
+		dbname             = aws_db_instance.main.db_name
+		username           = aws_db_instance.main.username
+		password_secret_arn = aws_db_instance.main.master_user_secret[0].secret_arn
 	})
 }
