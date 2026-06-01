@@ -11,12 +11,11 @@ The team members on this project are:
 
 ## Project Structure
 The key phases of this project:
-- `Tracked Product Checker`
-- `Scraping`
-- `Cleaning`
-- `Notifications`
-- `Database`
-- `Dashboard`
+- `scraping/`
+- `cleaning/`
+- `notifications/`
+- `database/`
+- `dashboard/`
 
 Other folders:
 - `.github/`
