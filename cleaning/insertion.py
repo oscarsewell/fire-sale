@@ -91,13 +91,12 @@ def insert_product_into_db(
     try:
         with connection.cursor() as cursor:
             insert_query = """
-                INSERT INTO price_history (product_id, current_price, original_price, scraped_at)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO price_history (product_id, current_price, scraped_at)
+                VALUES (%s, %s, %s)
             """
             cursor.execute(insert_query, (
                 product["product_id"],
                 product["current_price"],
-                product["original_price"],
                 product["scraped_at"]
             ))
             connection.commit()

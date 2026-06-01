@@ -3,19 +3,6 @@ It includes functions to clean product names, extract currency symbols,
 convert price strings to floats, calculate discount percentages, 
 and convert timestamp strings to datetime objects."""
 
-# dictionary format:
-# {
-# "product_id": 67
-# "product_name": "",
-# "original_price": "$999.00"
-# "current_price": "$899.00",
-# "currency_code": "USD"
-# "url": "",
-# "website_name": "EBuyer",
-# "scraped_at": "[timestamp]"
-# }
-#
-
 import logging
 from datetime import datetime
 import re
@@ -165,6 +152,18 @@ def valid_url(product_url: str) -> bool:
     return is_valid
 
 
+def check_page_exists_bool(page_exists) -> bool:
+    """Checks if the page_exists value is a boolean."""
+    logger.debug("Checking page_exists value: %r", page_exists)
+
+    if isinstance(page_exists, bool):
+        logger.info("page_exists is a valid boolean: %r", page_exists)
+        return page_exists
+    else:
+        logger.error("page_exists is not a boolean: %r", page_exists)
+        raise TypeError("page_exists must be a boolean.")
+
+
 def clean_product_data(product: dict) -> dict:
     """Cleans and normalizes the product data."""
     logger.info("Starting full product data clean.")
@@ -188,15 +187,55 @@ def clean_product_data(product: dict) -> dict:
             f"product is missing required keys: {', '.join(missing_keys)}"
         )
 
-    product["product_name"] = clean_product_name(
-        product.get("product_name", "")
-    )
-    product["original_price"] = parse_price(product["original_price"])
-    product["current_price"] = parse_price(product["current_price"])
-    product["currency_code"] = clean_currency(product["currency_code"])
-    product["scraped_at"] = convert_to_datetime(product["scraped_at"])
-    logger.info("Product data clean complete.")
-    return product
+    try:
+        if product.get("product_name") is not None:
+            product["product_name"] = clean_product_name(
+                product.get("product_name", "")
+            )
+        else:
+            return None
+        if product.get("original_price") is not None:
+            product["original_price"] = parse_price(
+                product["original_price"]
+            )
+        else:
+            return None
+        if product.get("current_price") is not None:
+            product["current_price"] = parse_price(
+                product["current_price"]
+            )
+        else:
+            return None
+        if product.get("currency_code") is not None:
+            product["currency_code"] = clean_currency(
+                product["currency_code"]
+            )
+        else:
+            return None
+        if product.get("scraped_at") is not None:
+            product["scraped_at"] = convert_to_datetime(
+                product["scraped_at"]
+            )
+        else:
+            return None
+        if product.get("url") is not None:
+            if valid_url(product["url"]):
+                product["url"] = product["url"].strip()
+            else:
+                logger.warning("URL is invalid, skipping product")
+                raise ValueError(f"Invalid URL: {product['url']}")
+        if product.get("page_exists") is not None:
+            product["page_exists"] = check_page_exists_bool(
+                product["page_exists"]
+            )
+            if product.get("page_exists") is False:
+                logger.warning("Page does not exist, skipping product")
+
+        logger.info("Product data clean complete.")
+        return product
+    except Exception as e:
+        logger.error("Error during product data cleaning: %s", str(e))
+        raise
 
 
 if __name__ == "__main__":
