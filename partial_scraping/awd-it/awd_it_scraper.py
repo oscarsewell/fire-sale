@@ -4,6 +4,7 @@
 import logging
 from datetime import datetime
 from curl_cffi import requests
+from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
 
 logging.basicConfig(
@@ -22,7 +23,7 @@ def fetch_html_content(url: str) -> str:
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
         return response.text
-    except requests.RequestException as e:
+    except RequestException as e:
         log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
 
@@ -91,7 +92,7 @@ def scrape_all_products(urls: list) -> list[dict]:
 if __name__ == "__main__":
     # Example usage
     urls = [
-        "https://www.awd-it.co.uk/awd-lian-li-o11-mini-snow-edition-ryzen-5-5600x-4.6ghz-gigabyte-b550-vison-nvidia-geforce-rtx-3060-vision-12gb-gaming-pc.html"
+        "https://www.awd-it.co.uk/awd-lian-li-o11-mini-snow-edition-ryzen-5-5600x-4.6ghz-gigabyte-b550-vison-nvidia-geforce-rtx-3060-vision-12gb-gaming.html"
     ]
 
     html_content = fetch_html_content(urls[0])
