@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from bot_db import insert_discord_user, get_or_create_product, add_tracking
+from bot_db import insert_discord_user, get_or_create_product, add_tracking, get_tracked_products, remove_tracking
 
 load_dotenv()
 
@@ -92,7 +92,8 @@ async def track(
         try:
             discord_user_id = button_interaction.user.id
             user_id = insert_discord_user(discord_user_id)
-            product_id = get_or_create_product(product_url, website_name)
+            product_id = get_or_create_product(
+                product_url=product_url, product_name="Not set", site_name=website_name, currency="GBP",)
             add_tracking(user_id, product_id, target_discount)
 
             await button_interaction.response.edit_message(
@@ -153,9 +154,63 @@ async def help_command(interaction: discord.Interaction):
 @tree.command(name="list", description="List your tracked products")
 async def list_command(interaction: discord.Interaction):
     """Responds to /list to show the user's tracked products"""
-    await interaction.response.send_message(
-        "This feature is coming soon! Stay tuned for updates.",
-        ephemeral=True,
-    )
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        tracked_products = get_tracked_products(interaction.user.id)
+
+        if not tracked_products:
+            await interaction.followup.send("You aren't tracking any products yet!", ephemeral=True)
+            return
+
+        message_lines = ["**Your Tracked Products:**\n"]
+
+        for index, product in enumerate(tracked_products, start=1):
+            message_lines.append(
+                f"\n**{index}. {product['product_name']}**"
+                f"ID: {product['product_id']}\n"
+                f"Store: {product['site_name']}\n"
+                f"Target Discount: {product['target_discount']}%\n"
+                f"URL: {product['product_url']}\n"
+            )
+
+        await interaction.followup.send(
+            "\n".join(message_lines),
+            ephemeral=True
+        )
+
+    except Exception as e:
+        await interaction.followup.send(
+            f"Something went wrong fetching your tracked products: {e}", ephemeral=True
+        )
+
+
+@tree.command(name="untrack", description="Stop tracking a product")
+async def untrack(
+    interaction: discord.Interaction,
+    product_id: int
+):
+    """Responds to /untrack to stop tracking a product"""
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        was_removed = remove_tracking(interaction.user.id, product_id)
+
+        if not was_removed:
+            await interaction.followup.send(
+                "Couldn't find that product in your tracked list.\nPlease check the product ID and try again.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.followup.send(
+            f"Stopped tracking product ID {product_id}.",
+            ephemeral=True
+        )
+
+    except Exception as e:
+        await interaction.followup.send(
+            f"Something went wrong trying to untrack that product: {e}", ephemeral=True
+        )
 
 client.run(TOKEN)
