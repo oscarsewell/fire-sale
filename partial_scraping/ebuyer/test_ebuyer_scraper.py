@@ -138,7 +138,7 @@ class TestExtractAllProductInfo:
             "url",
             "current_price",
             "currency_code",
-            "exists",
+            "page_exists",
             "scraped_at"
         }
         assert set(result.keys()) == required_keys
@@ -151,7 +151,7 @@ class TestExtractAllProductInfo:
         assert result["url"] == url
         assert result["current_price"] == "$99.99"
         assert result["currency_code"] == "USD"
-        assert result["exists"] is True
+        assert result["page_exists"] is True
 
     def test_extract_all_product_info_includes_timestamp(self, valid_url_and_id, mock_soup):
         """Test that extract_all_product_info includes scraped_at timestamp."""
@@ -181,16 +181,16 @@ class TestCreateProductInfoNotFound:
             "url",
             "current_price",
             "currency_code",
-            "exists",
+            "page_exists",
             "scraped_at"
         }
         assert set(result.keys()) == required_keys
 
-    def test_create_product_info_not_found_has_exists_false(self, valid_url_and_id):
-        """Test that create_product_info_not_found sets exists to False."""
+    def test_create_product_info_not_found_has_page_exists_false(self, valid_url_and_id):
+        """Test that create_product_info_not_found sets page_exists to False."""
         url, product_id = valid_url_and_id
         result = create_product_info_not_found(url, product_id)
-        assert result["exists"] is False
+        assert result["page_exists"] is False
     
     def test_create_product_info_not_found_values_correct(self, valid_url_and_id):
         """Test that create_product_info_not_found sets correct values."""
@@ -223,13 +223,13 @@ class TestScrapeAllProducts:
         assert result[0]["url"] == valid_urls_and_ids[0][0]
         assert result[0]["current_price"] == "$99.99"
         assert result[0]["currency_code"] == "USD"
-        assert result[0]["exists"] is True
+        assert result[0]["page_exists"] is True
 
         # 2nd URL
         assert result[1]["url"] == valid_urls_and_ids[1][0]
         assert result[1]["current_price"] == "$300.00"
         assert result[1]["currency_code"] == "USD"
-        assert result[1]["exists"] is True
+        assert result[1]["page_exists"] is True
 
     def test_scrape_all_products_empty_list(self):
         """Test that scrape_all_products handles empty URL list."""
@@ -252,7 +252,7 @@ class TestScrapeAllProducts:
         result = scrape_all_products(urls_and_ids)
 
         assert len(result) == 1
-        assert result[0]["exists"] is False
+        assert result[0]["page_exists"] is False
         assert result[0]["current_price"] == "N/A"
         assert result[0]["currency_code"] == "N/A"
         assert result[0]["scraped_at"] is None
