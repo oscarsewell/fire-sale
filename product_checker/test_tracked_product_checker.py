@@ -1,10 +1,12 @@
 """Tests for the tracked product checker lambda."""
 import pytest
-import product_checker.tracked_product_checker as tracked_product_checker
+from unittest.mock import Mock, patch
+from tracked_product_checker import (
+    get_base_url,
+    get_db_credentials,
+    get_tracked_products_by_site
+)
 
-get_base_url = tracked_product_checker.get_base_url
-get_db_credentials = tracked_product_checker.get_db_credentials
-get_tracked_products_by_site = tracked_product_checker.get_tracked_products_by_site
 
 def test_get_base_url():
     """Test that get_base_url correctly extracts the base URL from a product URL."""
@@ -66,7 +68,32 @@ def test_get_db_credentials_missing_env_vars(monkeypatch):
         get_db_credentials()
 
 
-def test_get_tracked_products_by_site():
-    """Test that get_tracked_products_by_site returns a dictionary."""
-    products_by_site = get_tracked_products_by_site()
+def test_get_tracked_products_by_site(monkeypatch):
+    """Test that get_tracked_products_by_site correctly groups products by site."""
+    # Mock database cursor with fake data
+    mock_cursor = Mock()
+    mock_cursor.fetchall.return_value = [
+        (1, "https://www.ebuyer.com/product/1", "ebuyer"),
+        (2, "https://www.ebuyer.com/product/2", "ebuyer"),
+        (3, "https://www.overclockers.co.uk/product/1", "overclockers"),
+        (4, "https://www.unknown-site.com/product/1", None),  # site_name is NULL
+    ]
+
+    # Mock database connection
+    mock_connection = Mock()
+    mock_connection.cursor.return_value = mock_cursor
+
+    # Patch psycopg2.connect and get_db_credentials
+    with patch("psycopg2.connect", return_value=mock_connection):
+        products_by_site = get_tracked_products_by_site()
+
+    # Assert grouping is correct
     assert isinstance(products_by_site, dict)
+    assert "ebuyer" in products_by_site
+    assert "overclockers" in products_by_site
+    assert "www.unknown-site.com" in products_by_site  # base URL for NULL site
+
+    # Assert correct number of products per site
+    assert len(products_by_site["ebuyer"]) == 2
+    assert len(products_by_site["overclockers"]) == 1
+    assert len(products_by_site["www.unknown-site.com"]) == 1
