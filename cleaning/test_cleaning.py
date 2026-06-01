@@ -191,10 +191,12 @@ def test_clean_product_data():
         "product_name": "  Apple iPhone 13  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",
-        "currency": "usd",
+        "currency_code": "usd",
         "url": "https://www.example.com/product/123",
         "website_name": "ExampleStore",
-        "scraped_at": "2024-06-01T12:00:00Z"
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "product_id": "123",
+        "page_exists": True
     }
     result = clean_product_data(product)
     assert result["product_name"] == "Apple iPhone 13"

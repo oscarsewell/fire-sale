@@ -1,10 +1,41 @@
 """Tests for the insertion module."""
 from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import Mock, MagicMock
 import pytest
 import psycopg2
 
-from insertion import insert_product_into_db
+from insertion import insert_product_into_db, get_db_credentials
+
+
+def test_get_db_credentials(monkeypatch):
+    """Test that get_db_credentials returns credentials from environment variables."""
+    monkeypatch.setenv("DB_HOST", "localhost")
+    monkeypatch.setenv("DB_USER", "user")
+    monkeypatch.setenv("DB_PASSWORD", "pass")
+    monkeypatch.setenv("DB_PORT", "5432")
+    monkeypatch.setenv("DB_NAME", "db")
+
+    credentials = get_db_credentials()
+    assert credentials == {
+        "host": "localhost",
+        "port": 5432,
+        "username": "user",
+        "password": "pass",
+        "dbname": "db",
+    }
+
+
+def test_get_db_credentials_missing_env_vars(monkeypatch):
+    """Test that get_db_credentials raises an exception when environment variables are missing."""
+    # Clear environment variables
+    monkeypatch.delenv("DB_HOST", raising=False)
+    monkeypatch.delenv("DB_USER", raising=False)
+    monkeypatch.delenv("DB_PASSWORD", raising=False)
+    monkeypatch.delenv("DB_PORT", raising=False)
+    monkeypatch.delenv("DB_NAME", raising=False)
+
+    with pytest.raises(ValueError):
+        get_db_credentials()
 
 
 def test_insert_product_into_db_valid_input():

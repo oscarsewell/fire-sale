@@ -1,5 +1,4 @@
 regex
 psycopg2
 python-dotenv
-boto3
 iso4217 

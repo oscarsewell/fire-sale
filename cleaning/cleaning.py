@@ -174,8 +174,12 @@ def clean_product_data(product: dict) -> dict:
         raise TypeError("product must be a dictionary.")
 
     required_keys = (
-        "product_name", "original_price", "current_price",
-        "currency", "url", "website_name", "scraped_at"
+        "product_id",
+        "url",
+        "current_price",
+        "currency_code",
+        "scraped_at",
+        "page_exists"
     )
     missing_keys = [key for key in required_keys if key not in product]
     if missing_keys:
@@ -185,10 +189,11 @@ def clean_product_data(product: dict) -> dict:
         )
 
     product["product_name"] = clean_product_name(
-        product.get("product_name", ""))
+        product.get("product_name", "")
+    )
     product["original_price"] = parse_price(product["original_price"])
     product["current_price"] = parse_price(product["current_price"])
-    product["currency"] = clean_currency(product["currency"])
+    product["currency_code"] = clean_currency(product["currency_code"])
     product["scraped_at"] = convert_to_datetime(product["scraped_at"])
     logger.info("Product data clean complete.")
     return product
@@ -200,7 +205,7 @@ if __name__ == "__main__":
         "product_name": "  Apple iPhone 13 Pro Max  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",
-        "currency": "USD",
+        "currency_code": "USD",
         "url": "https://www.example.com/product/iphone-13-pro-max",
         "website_name": "ExampleStore",
         "scraped_at": "2024-06-01T12:00:00Z"

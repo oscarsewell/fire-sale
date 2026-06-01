@@ -3,7 +3,6 @@ import json
 import os
 from datetime import datetime, timezone, timedelta
 import logging
-
 import boto3
 import psycopg2
 from dotenv import load_dotenv
@@ -23,12 +22,14 @@ def get_db_credentials() -> dict:
     First attempts to load from environment variables (set via .env or Lambda env).
     Falls back to AWS Secrets Manager if environment variables are not found.
     """
+    # Try to get credentials from environment variables first
     host = os.getenv("DB_HOST")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     port = os.getenv("DB_PORT")
     dbname = os.getenv("DB_NAME")
 
+    # If all env vars are present, use them
     if all([host, user, password, port, dbname]):
         logger.info("Using credentials from environment variables")
         return {
@@ -39,6 +40,7 @@ def get_db_credentials() -> dict:
             "dbname": dbname,
         }
 
+    # Otherwise, try to get from AWS Secrets Manager (Lambda environment)
     try:
         secret_arn = os.getenv("DB_SECRET_ARN")
         if not secret_arn:
@@ -107,12 +109,10 @@ def insert_product_into_db(
 
 
 if __name__ == "__main__":
-    # Load environment variables from .env file
-    load_dotenv()
-
-    # Get credentials from environment or AWS Secrets Manager
+    load_dotenv()  # Load .env file if it exists
+    
     credentials = get_db_credentials()
-
+    
     # Example usage
     db_connection = psycopg2.connect(
         dbname=credentials["dbname"],
