@@ -89,7 +89,7 @@ def scrape_all_products(urls: list) -> list[dict]:
             products.append(product_info)
             log.info("Successfully scraped product information from URL: %s", url)
         except Exception as e:
-            log.error("Failed to scrape URL: %s", url, e)
+            log.error("Failed to scrape URL: %s - %s", url, e)
 
     return products
 
