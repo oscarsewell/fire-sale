@@ -1,10 +1,11 @@
 """Tests for the insertion module."""
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 import pytest
 import psycopg2
 
-from insertion import insert_product_into_db, get_db_credentials
+from insertion import insert_product_into_db, get_db_credentials, mark_products_defunct
+from lambda_handler import lambda_handler
 
 
 def test_get_db_credentials(monkeypatch):
@@ -50,12 +51,7 @@ def test_insert_product_into_db_valid_input():
 
     product = {
         "product_id": "123",
-        "product_name": "Apple iPhone 13 Pro Max",
-        "original_price": 109900,
         "current_price": 99900,
-        "currency_code": "USD",
-        "url": "https://www.example.com/product/123",
-        "website_name": "ExampleStore",
         "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     }
 
@@ -63,12 +59,12 @@ def test_insert_product_into_db_valid_input():
 
     mock_connection.cursor.assert_called_once()
     expected_query = """
-                INSERT INTO price_history (product_id, current_price, original_price, scraped_at)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO price_history (product_id, current_price, scraped_at)
+                VALUES (%s, %s, %s)
             """
     mock_cursor.execute.assert_called_once_with(
         expected_query,
-        ("123", 99900, 109900, product["scraped_at"])
+        ("123", 99900, product["scraped_at"])
     )
     mock_connection.commit.assert_called_once()
 
@@ -137,27 +133,117 @@ def test_insert_product_into_db_database_error_rolls_back():
 
 
 def test_insert_product_into_db_all_required_keys():
-    """Tests that all required keys must be present for successful insertion."""
+    """Tests that each individual required key being absent raises a ValueError."""
     mock_connection = Mock()
 
-    required_keys = (
-        "product_name", "product_id", "original_price",
-        "current_price", "currency_code", "url", "website_name", "scraped_at"
-    )
+    required_keys = ("product_id", "current_price", "scraped_at")
 
     # Test each missing key individually
     for missing_key in required_keys:
         product = {
             "product_id": "123",
-            "product_name": "iPhone",
-            "original_price": 109900,
             "current_price": 99900,
-            "currency_code": "USD",
-            "url": "https://www.example.com/product/123",
-            "website_name": "ExampleStore",
             "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
         }
         del product[missing_key]
 
         with pytest.raises(ValueError, match="missing required keys"):
             insert_product_into_db(product, mock_connection)
+
+
+def test_mark_products_defunct_valid():
+    """Tests that mark_products_defunct executes the correct UPDATE query."""
+    mock_connection = Mock()
+    mock_cursor = MagicMock()
+    mock_connection.cursor.return_value.__enter__ = Mock(return_value=mock_cursor)
+    mock_connection.cursor.return_value.__exit__ = Mock(return_value=None)
+
+    urls = ["https://www.example.com/product/1", "https://www.example.com/product/2"]
+    mark_products_defunct(urls, mock_connection)
+
+    mock_cursor.execute.assert_called_once_with(
+        "UPDATE products SET page_exists = FALSE WHERE product_url = ANY(%s)",
+        (urls,)
+    )
+    mock_connection.commit.assert_called_once()
+
+
+def test_mark_products_defunct_database_error_rolls_back():
+    """Tests that a database error during mark_products_defunct triggers a rollback."""
+    mock_connection = Mock()
+    mock_cursor = MagicMock()
+    mock_connection.cursor.return_value.__enter__ = Mock(return_value=mock_cursor)
+    mock_connection.cursor.return_value.__exit__ = Mock(return_value=None)
+    mock_cursor.execute.side_effect = psycopg2.DatabaseError("Connection failed")
+
+    urls = ["https://www.example.com/product/1"]
+    with pytest.raises(psycopg2.DatabaseError):
+        mark_products_defunct(urls, mock_connection)
+
+    mock_connection.rollback.assert_called_once()
+    mock_connection.commit.assert_not_called()
+
+
+def test_lambda_handler_inserts_valid_and_collects_defunct():
+    """Tests that lambda_handler inserts valid products and collects defunct ones."""
+    valid_product = {
+        "product_id": "1",
+        "url": "https://www.example.com/product/1",
+        "current_price": "$999.00",
+        "currency_code": "USD",
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": True,
+    }
+    defunct_product = {
+        "product_id": "2",
+        "url": "https://www.example.com/product/2",
+        "current_price": "$0.00",
+        "currency_code": "USD",
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": False,
+    }
+
+    mock_connection = Mock()
+    with patch("lambda_handler.psycopg2.connect", return_value=mock_connection), \
+         patch("lambda_handler.get_db_credentials", return_value={
+             "host": "localhost", "port": 5432, "username": "user",
+             "password": "pass", "dbname": "db"
+         }), \
+         patch("lambda_handler.insert_product_into_db") as mock_insert, \
+         patch("lambda_handler.mark_products_defunct") as mock_defunct:
+
+        result = lambda_handler([valid_product, defunct_product], None)
+
+    assert result["inserted"] == 1
+    assert len(result["defunct_products"]) == 1
+    assert result["defunct_products"][0]["product_id"] == "2"
+    mock_insert.assert_called_once()
+    mock_defunct.assert_called_once_with(
+        ["https://www.example.com/product/2"], mock_connection
+    )
+    mock_connection.close.assert_called_once()
+
+
+def test_lambda_handler_skips_invalid_products():
+    """Tests that lambda_handler skips products that fail cleaning (return None)."""
+    invalid_product = {
+        "product_name": "iPhone",
+        # Missing all critical fields
+    }
+
+    mock_connection = Mock()
+    with patch("lambda_handler.psycopg2.connect", return_value=mock_connection), \
+         patch("lambda_handler.get_db_credentials", return_value={
+             "host": "localhost", "port": 5432, "username": "user",
+             "password": "pass", "dbname": "db"
+         }), \
+         patch("lambda_handler.insert_product_into_db") as mock_insert, \
+         patch("lambda_handler.mark_products_defunct") as mock_defunct:
+
+        result = lambda_handler([invalid_product], None)
+
+    assert result["inserted"] == 0
+    assert result["defunct_products"] == []
+    mock_insert.assert_not_called()
+    mock_defunct.assert_not_called()
+    mock_connection.close.assert_called_once()

@@ -7,6 +7,7 @@ from cleaning import (
     clean_currency,
     convert_to_datetime,
     valid_url,
+    check_page_exists_bool,
     clean_product_data
 )
 
@@ -221,3 +222,37 @@ def test_clean_product_data_missing_critical_keys_returns_none():
     }
     result = clean_product_data(incomplete_product)
     assert result is None
+
+
+def test_clean_product_data_page_not_exists():
+    """Tests that a defunct product returns a minimal dict with page_exists=False."""
+    product = {
+        "product_id": "123",
+        "url": "https://www.example.com/product/123",
+        "current_price": "$999.00",
+        "currency_code": "USD",
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": False,
+    }
+    result = clean_product_data(product)
+    assert result == {
+        "product_id": "123",
+        "url": "https://www.example.com/product/123",
+        "page_exists": False,
+    }
+
+
+def test_check_page_exists_bool_valid():
+    """Tests that check_page_exists_bool returns True/False correctly."""
+    assert check_page_exists_bool(True) is True
+    assert check_page_exists_bool(False) is False
+
+
+def test_check_page_exists_bool_non_bool_raises_error():
+    """Tests that a non-boolean value raises a TypeError."""
+    with pytest.raises(TypeError):
+        check_page_exists_bool(1)
+    with pytest.raises(TypeError):
+        check_page_exists_bool("true")
+    with pytest.raises(TypeError):
+        check_page_exists_bool(None)
