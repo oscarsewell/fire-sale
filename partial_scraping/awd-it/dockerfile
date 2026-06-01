@@ -14,6 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY awd_it_scraper.py .
 
-ENTRYPOINT ["python", "-m", "awslambdaric"]
-
 CMD ["awd_it_scraper.handler"]
