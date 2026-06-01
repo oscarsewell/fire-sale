@@ -1,7 +1,10 @@
 """Function for inserting cleaned data into the database."""
+import json
 import os
 from datetime import datetime, timezone, timedelta
 import logging
+
+import boto3
 import psycopg2
 from dotenv import load_dotenv
 
@@ -10,6 +13,55 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+secrets_client = boto3.client("secretsmanager")
+
+
+def get_db_credentials() -> dict:
+    """Retrieve database credentials from environment or AWS Secrets Manager.
+
+    First attempts to load from environment variables (set via .env or Lambda env).
+    Falls back to AWS Secrets Manager if environment variables are not found.
+    """
+    host = os.getenv("DB_HOST")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    port = os.getenv("DB_PORT")
+    dbname = os.getenv("DB_NAME")
+
+    if all([host, user, password, port, dbname]):
+        logger.info("Using credentials from environment variables")
+        return {
+            "host": host,
+            "port": int(port),
+            "username": user,
+            "password": password,
+            "dbname": dbname,
+        }
+
+    try:
+        secret_arn = os.getenv("DB_SECRET_ARN")
+        if not secret_arn:
+            raise ValueError(
+                "DB_SECRET_ARN not set and environment variables incomplete. "
+                "Either set DB_HOST, DB_USER, DB_PASSWORD, DB_PORT, DB_NAME "
+                "or set DB_SECRET_ARN for AWS Secrets Manager."
+            )
+
+        logger.info("Using credentials from AWS Secrets Manager")
+        response = secrets_client.get_secret_value(SecretId=secret_arn)
+        credentials = json.loads(response["SecretString"])
+
+        return {
+            "host": credentials.get("host"),
+            "port": int(credentials.get("port", 5432)),
+            "username": credentials.get("username"),
+            "password": credentials.get("password"),
+            "dbname": credentials.get("dbname"),
+        }
+    except Exception as e:
+        logger.error("Failed to retrieve database credentials: %s", str(e))
+        raise
 
 
 def insert_product_into_db(
@@ -58,30 +110,16 @@ if __name__ == "__main__":
     # Load environment variables from .env file
     load_dotenv()
 
-    # Debug: Check if env vars are loaded
-    db_name = os.getenv("DB_NAME")
-    db_user = os.getenv("DB_USER")
-    db_password = os.getenv("DB_PASSWORD")
-    db_host = os.getenv("DB_HOST")
-    db_port = os.getenv("DB_PORT")
-
-    logger.info("DB_NAME: %s", db_name)
-    logger.info("DB_USER: %s", db_user)
-    logger.info("DB_HOST: %s", db_host)
-    logger.info("DB_PORT: %s", db_port)
-
-    if not all([db_name, db_user, db_host, db_port]):
-        logger.error(
-            "Missing required environment variables. Please check your .env file.")
-        raise ValueError("Missing required database connection parameters")
+    # Get credentials from environment or AWS Secrets Manager
+    credentials = get_db_credentials()
 
     # Example usage
     db_connection = psycopg2.connect(
-        dbname=db_name,
-        user=db_user,
-        password=db_password,
-        host=db_host,
-        port=db_port
+        dbname=credentials["dbname"],
+        user=credentials["username"],
+        password=credentials["password"],
+        host=credentials["host"],
+        port=credentials["port"]
     )
     product_test = {
         "product_id": "1",
