@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 from bs4 import BeautifulSoup
-from overclockers_scraper import (
+from awd_it_full_scraper import (
     fetch_html_content,
     parse_html_content,
     extract_product_name,
@@ -14,13 +14,14 @@ from overclockers_scraper import (
     extract_currency_code,
     extract_website_name,
     extract_all_product_info,
+    create_product_info_not_found,
     scrape_all_products,
 )
 
 class TestFetchHTMLContent:
     """Test cases for fetching HTML content from URLs."""
 
-    @patch("overclockers_scraper.requests.get")
+    @patch("awd_it_full_scraper.requests.get")
     def test_fetch_html_content_success(self, mock_get, valid_url):
         """Test successful HTML content fetching."""
         mock_response = MagicMock()
@@ -32,10 +33,22 @@ class TestFetchHTMLContent:
         assert "<html>" in result
         mock_get.assert_called_once_with(valid_url, impersonate="chrome", timeout=10)
 
-    @patch("overclockers_scraper.requests.get")
-    def test_fetch_html_content_raises_on_bad_status(self, mock_get, valid_url):
-        """Test that fetch_html_content raises error on bad HTTP status."""
-        mock_get.return_value.raise_for_status.side_effect = Exception("404 Not Found")
+    @patch("awd_it_full_scraper.requests.get")
+    def test_fetch_html_content_404_returns_none(self, mock_get, valid_url):
+        """Test that fetch_html_content returns None on 404 status."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+        result = fetch_html_content(valid_url)
+        assert result is None
+
+    @patch("awd_it_full_scraper.requests.get")
+    def test_fetch_html_content_server_error_raises(self, mock_get, valid_url):
+        """Test that fetch_html_content raises on server errors."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.raise_for_status.side_effect = Exception("500 Server Error")
+        mock_get.return_value = mock_response
         with pytest.raises(Exception):
             fetch_html_content(valid_url)
 
@@ -57,7 +70,10 @@ class TestParseHTMLContent:
         """Test that parse_html_content correctly parses HTML."""
         soup = parse_html_content(mock_html_content)
         assert soup.find('meta', property='og:title')['content'] == "Gaming Laptop"
-        assert soup.find('span', attrs={'data-qa': 'price-current'}).text.strip() == "$99.99"
+
+        price_span = soup.main.find("span", attrs={"data-price-type": "finalPrice"})
+        if price_span:
+            assert price_span.find("span", class_="price").text.strip() == "$99.99"
 
     @pytest.mark.parametrize("invalid_content", ["", "<incomplete>"])
     def test_parse_html_content_edge_cases(self, invalid_content):
@@ -179,6 +195,7 @@ class TestExtractAllProductInfo:
             "currency_code",
             "url",
             "website_name",
+            "exists",
             "scraped_at"
         }
         assert set(result.keys()) == required_keys
@@ -192,6 +209,7 @@ class TestExtractAllProductInfo:
         assert result["currency_code"] == "USD"
         assert result["url"] == valid_url
         assert result["website_name"] == "store"
+        assert result["exists"] is True
 
     def test_extract_all_product_info_includes_timestamp(self, valid_url, mock_soup):
         """Test that extract_all_product_info includes scraped_at timestamp."""
@@ -200,6 +218,44 @@ class TestExtractAllProductInfo:
 
         scraped_at = datetime.fromisoformat(result["scraped_at"])
         assert isinstance(scraped_at, datetime)
+
+
+class TestCreateProductInfoNotFound:
+    """Test cases for creating product info when page doesn't exist."""
+
+    def test_create_product_info_not_found_returns_dict(self, valid_url):
+        """Test that create_product_info_not_found returns a dictionary."""
+        result = create_product_info_not_found(valid_url)
+        assert isinstance(result, dict)
+
+    def test_create_product_info_not_found_contains_required_keys(self, valid_url):
+        """Test that create_product_info_not_found contains all required keys."""
+        result = create_product_info_not_found(valid_url)
+        required_keys = {
+            "url",
+            "product_name",
+            "current_price",
+            "original_price",
+            "currency_code",
+            "website_name",
+            "exists",
+            "scraped_at"
+        }
+        assert set(result.keys()) == required_keys
+
+    def test_create_product_info_not_found_has_exists_false(self, valid_url):
+        """Test that create_product_info_not_found sets exists to False."""
+        result = create_product_info_not_found(valid_url)
+        assert result["exists"] is False
+    
+    def test_create_product_info_not_found_values_correct(self, valid_url):
+        """Test that create_product_info_not_found sets correct values."""
+        result = create_product_info_not_found(valid_url)
+        assert result["url"] == valid_url
+        assert result["product_name"] == "N/A"
+        assert result["current_price"] == "N/A"
+        assert result["currency_code"] == "N/A"
+        assert result["scraped_at"] is None
 
 
 class TestScrapeAllProducts:
@@ -223,11 +279,14 @@ class TestScrapeAllProducts:
         assert result[0]["product_name"] == "Gaming Laptop"
         assert result[0]["current_price"] == "$99.99"
         assert result[0]["currency_code"] == "USD"
+        assert result[0]["exists"] is True
+
         # 2nd URL
         assert result[1]["url"] == valid_urls[1]
         assert result[1]["product_name"] == "Home Laptop"
         assert result[1]["current_price"] == "$300.00"
         assert result[1]["currency_code"] == "USD"
+        assert result[1]["exists"] is True
 
     def test_scrape_all_products_empty_list(self):
         """Test that scrape_all_products handles empty URL list."""
@@ -238,3 +297,20 @@ class TestScrapeAllProducts:
         """Test that scrape_all_products raises error when given None (e.g a failed DB query)."""
         with pytest.raises(TypeError):
             scrape_all_products(None)
+
+    @patch("awd_it_full_scraper.requests.get")
+    def test_scrape_all_products_handles_404_error(self, mock_get):
+        """Test that scrape_all_products handles 404 errors gracefully."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        urls = ["https://example.com/nonexistent"]
+        result = scrape_all_products(urls)
+
+        assert len(result) == 1
+        assert result[0]["exists"] is False
+        assert result[0]["product_name"] == "N/A"
+        assert result[0]["current_price"] == "N/A"
+        assert result[0]["currency_code"] == "N/A"
+        assert result[0]["scraped_at"] is None

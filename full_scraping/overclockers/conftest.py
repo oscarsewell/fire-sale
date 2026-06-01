@@ -28,15 +28,15 @@ def mock_html_content():
         <head>
             <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Gaming Laptop"/>
+            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <span id="lblSellingPrice">$99.99</span>
-            <span id="lblTicketPrice">$199.99</span>
-            <script id="structuredDataLdJson" type="application/ld+json">[{
-                "offers": [{
-                    "priceCurrency": "USD"
-                }]
-            }]</script>
+            <span class="price__amount " data-qa="price-current">
+                $99.99
+            </span>
+            <span class="price__amount price__amount--original " data-qa="price-original">
+                $199.99
+            </span>
         </body>
     </html>
     """
@@ -48,16 +48,13 @@ def mock_html_content_no_original_price():
     return """
     <html>
         <head>
-            <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Home Laptop"/>
+            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <span id="lblSellingPrice">$300.00</span>
-            <script id="structuredDataLdJson" type="application/ld+json">[{
-                "offers": [{
-                    "priceCurrency": "USD"
-                }]
-            }]</script>
+            <span class="price__amount " data-qa="price-current">
+                $300.00
+            </span>
         </body>
     </html>
     """
@@ -71,15 +68,15 @@ def mock_html_content_with_whitespace():
         <head>
             <meta property="og:site_name" content="  Store With Spaces  "/>
             <meta property="og:title" content="  Gaming Laptop Pro  "/>
+            <meta property="product:price:currency" content="  USD  "/>
         </head>
         <body>
-            <span id="lblSellingPrice">  $50.00  </span>
-            <span id="lblTicketPrice">  $400.00  </span>
-            <script id="structuredDataLdJson" type="application/ld+json">[{
-                "offers": [{
-                    "priceCurrency": "USD"
-                }]
-            }]</script>
+            <span class="price__amount " data-qa="price-current">
+                $50.00
+            </span>
+            <span class="price__amount price__amount--original " data-qa="price-original">
+                $400.00
+            </span>
         </body>
     </html>
     """
@@ -107,8 +104,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
-    with patch("ebuyer_scraper.fetch_html_content") as mock_fetch, \
-         patch("ebuyer_scraper.parse_html_content") as mock_parse:
+    with patch("overclockers_full_scraper.fetch_html_content") as mock_fetch, \
+         patch("overclockers_full_scraper.parse_html_content") as mock_parse:
         # To handle multiple URLs
         mock_fetch.side_effect = [mock_html_content, mock_html_content_no_original_price]
         mock_parse.side_effect = [mock_soup, mock_soup_no_original_price]

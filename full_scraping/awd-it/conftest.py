@@ -20,23 +20,25 @@ def valid_url():
     return "https://www.store.com/product1"
 
 
+
 @pytest.fixture
 def mock_html_content():
     """Fixture for mock HTML content."""
     return """
     <html>
         <head>
-            <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Gaming Laptop"/>
             <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <span class="price__amount " data-qa="price-current">
-                $99.99
-            </span>
-            <span class="price__amount price__amount--original " data-qa="price-original">
-                $199.99
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$99.99</span>
+                </span>
+                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$199.99</span>
+                </span>
+            </main>
         </body>
     </html>
     """
@@ -52,9 +54,11 @@ def mock_html_content_no_original_price():
             <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <span class="price__amount " data-qa="price-current">
-                $300.00
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">$300.00</span>
+                </span>
+            </main>
         </body>
     </html>
     """
@@ -66,17 +70,18 @@ def mock_html_content_with_whitespace():
     return """
     <html>
         <head>
-            <meta property="og:site_name" content="  Store With Spaces  "/>
             <meta property="og:title" content="  Gaming Laptop Pro  "/>
             <meta property="product:price:currency" content="  USD  "/>
         </head>
         <body>
-            <span class="price__amount " data-qa="price-current">
-                $50.00
-            </span>
-            <span class="price__amount price__amount--original " data-qa="price-original">
-                $400.00
-            </span>
+            <main>
+                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
+                    <span class="price">  $50.00  </span>
+                </span>
+                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
+                    <span class="price">  $400.00  </span>
+                </span>
+            </main>
         </body>
     </html>
     """
@@ -104,8 +109,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
-    with patch("overclockers_scraper.fetch_html_content") as mock_fetch, \
-         patch("overclockers_scraper.parse_html_content") as mock_parse:
+    with patch("awd_it_full_scraper.fetch_html_content") as mock_fetch, \
+         patch("awd_it_full_scraper.parse_html_content") as mock_parse:
         # To handle multiple URLs
         mock_fetch.side_effect = [mock_html_content, mock_html_content_no_original_price]
         mock_parse.side_effect = [mock_soup, mock_soup_no_original_price]

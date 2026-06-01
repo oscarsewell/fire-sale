@@ -6,19 +6,19 @@ from bs4 import BeautifulSoup
 
 
 @pytest.fixture
-def valid_urls():
-    """Fixture for a list of URLs, each for a different product on the same website."""
+def valid_urls_and_ids():
+    """Fixture for a list of tuples containing URLs and IDs, 
+    each for a different product on the same website."""
     return [
-        "https://www.store.com/product1",
-        "https://www.store.com/product2"    
+        ("https://www.store.com/product1", 1),
+        ("https://www.store.com/product2", 2)    
     ]
 
 
 @pytest.fixture
-def valid_url():
-    """Fixture for a single product URL."""
-    return "https://www.store.com/product1"
-
+def valid_url_and_id():
+    """Fixture for a single product URL and ID."""
+    return ("https://www.store.com/product1", 1)
 
 
 @pytest.fixture
@@ -27,18 +27,17 @@ def mock_html_content():
     return """
     <html>
         <head>
+            <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Gaming Laptop"/>
-            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <main>
-                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
-                    <span class="price">$99.99</span>
-                </span>
-                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
-                    <span class="price">$199.99</span>
-                </span>
-            </main>
+            <span id="lblSellingPrice">$99.99</span>
+            <span id="lblTicketPrice">$199.99</span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """
@@ -50,15 +49,16 @@ def mock_html_content_no_original_price():
     return """
     <html>
         <head>
+            <meta property="og:site_name" content="Store"/>
             <meta property="og:title" content="Home Laptop"/>
-            <meta property="product:price:currency" content="USD"/>
         </head>
         <body>
-            <main>
-                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
-                    <span class="price">$300.00</span>
-                </span>
-            </main>
+            <span id="lblSellingPrice">$300.00</span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """
@@ -70,18 +70,17 @@ def mock_html_content_with_whitespace():
     return """
     <html>
         <head>
+            <meta property="og:site_name" content="  Store With Spaces  "/>
             <meta property="og:title" content="  Gaming Laptop Pro  "/>
-            <meta property="product:price:currency" content="  USD  "/>
         </head>
         <body>
-            <main>
-                <span data-price-type="finalPrice" class="price-wrapper price-including-tax">
-                    <span class="price">  $50.00  </span>
-                </span>
-                <span data-price-type="oldPrice" class="price-wrapper price-including-tax">
-                    <span class="price">  $400.00  </span>
-                </span>
-            </main>
+            <span id="lblSellingPrice">  $50.00  </span>
+            <span id="lblTicketPrice">  $400.00  </span>
+            <script id="structuredDataLdJson" type="application/ld+json">[{
+                "offers": [{
+                    "priceCurrency": "USD"
+                }]
+            }]</script>
         </body>
     </html>
     """
@@ -109,8 +108,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
-    with patch("awd_it_scraper.fetch_html_content") as mock_fetch, \
-         patch("awd_it_scraper.parse_html_content") as mock_parse:
+    with patch("ebuyer_scraper.fetch_html_content") as mock_fetch, \
+         patch("ebuyer_scraper.parse_html_content") as mock_parse:
         # To handle multiple URLs
         mock_fetch.side_effect = [mock_html_content, mock_html_content_no_original_price]
         mock_parse.side_effect = [mock_soup, mock_soup_no_original_price]
