@@ -34,6 +34,8 @@ CREATE TABLE products (
   FOREIGN KEY (site_id) REFERENCES site_names(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_products_site_id ON products(site_id);
+
 CREATE TABLE tracked_products (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
