@@ -77,10 +77,7 @@ def insert_product_into_db(
         logger.error("product is not a dictionary: %r", product)
         raise TypeError("product must be a dictionary.")
 
-    required_keys = (
-        "product_name", "product_id", "original_price",
-        "current_price", "currency_code", "url", "website_name", "scraped_at"
-    )
+    required_keys = ("product_id", "current_price", "scraped_at")
     missing_keys = [key for key in required_keys if key not in product]
     if missing_keys:
         logger.error("product is missing required keys: %s", missing_keys)
@@ -107,11 +104,30 @@ def insert_product_into_db(
         raise
 
 
+def mark_products_defunct(
+        urls: list,
+        connection: psycopg2.extensions.connection
+) -> None:
+    """Updates the products table to mark pages as no longer existing."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE products SET page_exists = FALSE WHERE product_url = ANY(%s)",
+                (urls,)
+            )
+            connection.commit()
+            logger.info("Marked %d products as defunct.", len(urls))
+    except psycopg2.DatabaseError as e:
+        logger.error("Database error marking products defunct: %s", e)
+        connection.rollback()
+        raise
+
+
 if __name__ == "__main__":
     load_dotenv()  # Load .env file if it exists
-    
+
     credentials = get_db_credentials()
-    
+
     # Example usage
     db_connection = psycopg2.connect(
         dbname=credentials["dbname"],

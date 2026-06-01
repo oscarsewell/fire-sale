@@ -105,9 +105,9 @@ def clean_currency(currency: str) -> str:
 
     try:
         iso4217.Currency(cleaned_currency)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
         logger.error("Invalid currency code: '%s'", cleaned_currency)
-        raise ValueError(f"Invalid currency code: {cleaned_currency}")
+        raise ValueError(f"Invalid currency code: {cleaned_currency}") from e
 
     logger.info("Currency cleaned: '%s'", cleaned_currency)
     return cleaned_currency
@@ -156,85 +156,66 @@ def check_page_exists_bool(page_exists) -> bool:
     """Checks if the page_exists value is a boolean."""
     logger.debug("Checking page_exists value: %r", page_exists)
 
-    if isinstance(page_exists, bool):
-        logger.info("page_exists is a valid boolean: %r", page_exists)
-        return page_exists
-    else:
+    if not isinstance(page_exists, bool):
         logger.error("page_exists is not a boolean: %r", page_exists)
         raise TypeError("page_exists must be a boolean.")
 
+    logger.info("page_exists is a valid boolean: %r", page_exists)
+    return page_exists
+
+
+CRITICAL_KEYS = (
+    "product_id",
+    "url",
+    "current_price",
+    "currency_code",
+    "scraped_at",
+    "page_exists"
+)
+
 
 def clean_product_data(product: dict) -> dict:
-    """Cleans and normalizes the product data."""
-    logger.info("Starting full product data clean.")
+    """Cleans product data for Lambda insertion.
 
+    Returns None if any critical fields are missing (product is skipped).
+    Returns a minimal dict with page_exists=False if the page no longer exists.
+    Returns the cleaned product dict if page_exists=True.
+    """
     if not isinstance(product, dict):
         logger.error("product is not a dictionary: %r", product)
         raise TypeError("product must be a dictionary.")
 
-    required_keys = (
-        "product_id",
-        "url",
-        "current_price",
-        "currency_code",
-        "scraped_at",
-        "page_exists"
-    )
-    missing_keys = [key for key in required_keys if key not in product]
+    # Skip products with any missing critical fields
+    missing_keys = [k for k in CRITICAL_KEYS if product.get(k) is None]
     if missing_keys:
-        logger.error("product is missing required keys: %s", missing_keys)
-        raise ValueError(
-            f"product is missing required keys: {', '.join(missing_keys)}"
-        )
+        logger.warning(
+            "Skipping product - missing critical fields: %s", missing_keys)
+        return None
 
     try:
-        if product.get("product_name") is not None:
-            product["product_name"] = clean_product_name(
-                product.get("product_name", "")
-            )
-        else:
-            return None
-        if product.get("original_price") is not None:
-            product["original_price"] = parse_price(
-                product["original_price"]
-            )
-        else:
-            return None
-        if product.get("current_price") is not None:
-            product["current_price"] = parse_price(
-                product["current_price"]
-            )
-        else:
-            return None
-        if product.get("currency_code") is not None:
-            product["currency_code"] = clean_currency(
-                product["currency_code"]
-            )
-        else:
-            return None
-        if product.get("scraped_at") is not None:
-            product["scraped_at"] = convert_to_datetime(
-                product["scraped_at"]
-            )
-        else:
-            return None
-        if product.get("url") is not None:
-            if valid_url(product["url"]):
-                product["url"] = product["url"].strip()
-            else:
-                logger.warning("URL is invalid, skipping product")
-                raise ValueError(f"Invalid URL: {product['url']}")
-        if product.get("page_exists") is not None:
-            product["page_exists"] = check_page_exists_bool(
-                product["page_exists"]
-            )
-            if product.get("page_exists") is False:
-                logger.warning("Page does not exist, skipping product")
+        product["page_exists"] = check_page_exists_bool(product["page_exists"])
 
-        logger.info("Product data clean complete.")
+        if not product["page_exists"]:
+            logger.info("Product page defunct: %s", product.get("url"))
+            return {
+                "product_id": product["product_id"],
+                "url": product["url"],
+                "page_exists": False
+            }
+
+        # page_exists = True: validate and clean fields needed for insertion
+        if not valid_url(product["url"]):
+            logger.warning("Invalid URL, skipping product: %s", product["url"])
+            return None
+        product["url"] = product["url"].strip()
+        product["current_price"] = parse_price(product["current_price"])
+        product["currency_code"] = clean_currency(product["currency_code"])
+        product["scraped_at"] = convert_to_datetime(product["scraped_at"])
+
+        logger.info("Product data cleaned successfully.")
         return product
     except Exception as e:
-        logger.error("Error during product data cleaning: %s", str(e))
+        logger.error("Error cleaning product data: %s", str(e))
         raise
 
 
@@ -247,6 +228,7 @@ if __name__ == "__main__":
         "currency_code": "USD",
         "url": "https://www.example.com/product/iphone-13-pro-max",
         "website_name": "ExampleStore",
-        "scraped_at": "2024-06-01T12:00:00Z"
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": True
     }
     print(clean_product_data(example_product))
