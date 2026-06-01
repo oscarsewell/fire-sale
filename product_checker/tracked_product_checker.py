@@ -82,7 +82,8 @@ def get_db_credentials() -> dict:
             password_from_secret = password_obj.get("password")
 
         if not password_from_secret:
-            raise ValueError("Database password not found in Secrets Manager payload")
+            raise ValueError(
+                "Database password not found in Secrets Manager payload")
 
         return {
             "host": credentials.get("host"),
@@ -135,7 +136,7 @@ def get_tracked_products_by_site() -> dict:
             if key not in products_by_site:
                 products_by_site[key] = []
 
-            products_by_site[key].append((product_id, product_url))
+            products_by_site[key].append([product_id, product_url])
 
         total_products = sum(len(urls) for urls in products_by_site.values())
         logger.info(
