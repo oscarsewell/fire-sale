@@ -36,6 +36,13 @@ def test_get_base_url_raises_on_invalid_url():
         get_base_url(url)
 
 
+def test_get_base_url_raises_on_url_with_spaces():
+    """Test that get_base_url raises an exception for URLs with spaces."""
+    url = "https://www.example.com/product with spaces/12345"
+    with pytest.raises(ValueError, match="contains spaces"):
+        get_base_url(url)
+
+
 def test_get_db_credentials(monkeypatch):
     """Test that get_db_credentials returns credentials from environment variables."""
     monkeypatch.setenv("DB_HOST", "localhost")
@@ -108,3 +115,17 @@ def test_get_tracked_products_by_site(monkeypatch):
         [3, "https://www.overclockers.co.uk/product/1"]]
     assert products_by_site["www.unknown-site.com"] == [[4,
                                                          "https://www.unknown-site.com/product/1"]]
+
+
+def test_get_tracked_products_by_site_database_error():
+    """Test that get_tracked_products_by_site handles database errors gracefully."""
+    import psycopg2
+
+    # Mock database connection that raises an error
+    mock_connection = Mock()
+    mock_connection.cursor.side_effect = psycopg2.DatabaseError(
+        "Connection failed")
+
+    with patch("psycopg2.connect", return_value=mock_connection):
+        with pytest.raises(psycopg2.DatabaseError):
+            get_tracked_products_by_site()
