@@ -117,9 +117,8 @@ def get_tracked_products_by_site() -> dict:
 
         with connection.cursor() as cursor:
             query = """
-                SELECT product_id, p.product_url, sn.site
-                FROM tracked_products tp
-                JOIN products p ON tp.product_id = p.id
+                SELECT p.id AS product_id, p.product_url, sn.site
+                FROM products p
                 LEFT JOIN site_names sn ON p.site_id = sn.id
             """
 
