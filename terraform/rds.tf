@@ -77,3 +77,21 @@ resource "aws_db_instance" "main" {
 	deletion_protection = false
 	skip_final_snapshot = true
 }
+
+# Custom secret containing full DB connection details
+resource "aws_secretsmanager_secret" "rds_connection" {
+	name                    = "${var.project_name}-${var.environment}-rds-connection"
+	description             = "RDS database connection details for ${var.project_name}"
+	recovery_window_in_days = 7
+}
+
+resource "aws_secretsmanager_secret_version" "rds_connection" {
+	secret_id = aws_secretsmanager_secret.rds_connection.id
+	secret_string = jsonencode({
+		host               = aws_db_instance.main.address
+		port               = aws_db_instance.main.port
+		dbname             = aws_db_instance.main.db_name
+		username           = aws_db_instance.main.username
+		password_secret_arn = aws_db_instance.main.master_user_secret[0].secret_arn
+	})
+}

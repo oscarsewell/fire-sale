@@ -32,3 +32,8 @@ output "ecs_cluster_arn" {
 	description = "ARN of the shared ECS cluster."
 	value       = data.aws_ecs_cluster.main.arn
 }
+
+output "rds_connection_secret_arn" {
+	description = "ARN of the RDS connection details secret."
+	value       = aws_secretsmanager_secret.rds_connection.arn
+}
