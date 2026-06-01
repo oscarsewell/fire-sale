@@ -27,7 +27,7 @@ def fetch_html_content(url: str) -> str:
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
         return response.text
-    
+
     except RequestException as e:
         log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
@@ -48,7 +48,7 @@ def extract_current_price(soup: BeautifulSoup) -> str:
         return price.text.strip()
 
     log.warning("Current price not found.")
-    return "N/A"
+    return None
 
 
 def extract_currency_code(soup: BeautifulSoup) -> str:
@@ -56,12 +56,12 @@ def extract_currency_code(soup: BeautifulSoup) -> str:
     script = soup.find("script", id="structuredDataLdJson")
     if not script:
         log.warning("Currency code script tag not found.")
-        return "N/A"
-    
+        return None
+
     data = json.loads(script.string)
     if isinstance(data, list):
         data = data[0]
-    
+
     currency = data.get('offers')[0].get('priceCurrency')
     log.debug("Extracted currency code successfully: %s", currency)
     return currency
@@ -84,8 +84,8 @@ def create_product_info_not_found(url: str, product_id: int) -> dict:
     return {
         "product_id": product_id,
         "url": url,
-        "current_price": "N/A",
-        "currency_code": "N/A",
+        "current_price": None,
+        "currency_code": None,
         "page_exists": False,
         "scraped_at": None
     }
@@ -96,7 +96,7 @@ def scrape_all_products(urls_and_ids: list[tuple]) -> list[dict]:
     if not isinstance(urls_and_ids, list):
         raise TypeError("Must pass a list of tuples containing product URLs and IDs.")
 
-    log.info(f"Starting to scrape {len(urls_and_ids)} products")
+    log.info("Starting to scrape %d products", len(urls_and_ids))
     products = []
 
     for url, product_id in urls_and_ids:

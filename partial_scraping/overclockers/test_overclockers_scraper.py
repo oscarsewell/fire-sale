@@ -117,7 +117,7 @@ class TestExtractCurrencyCode:
         html = "<html><body>Test</body></html>"
         soup = BeautifulSoup(html, 'html.parser')
         result = extract_currency_code(soup)
-        assert result == "N/A"
+        assert result is None
 
 
 class TestExtractAllProductInfo:
@@ -191,15 +191,15 @@ class TestCreateProductInfoNotFound:
         url, product_id = valid_url_and_id
         result = create_product_info_not_found(url, product_id)
         assert result["page_exists"] is False
-    
+
     def test_create_product_info_not_found_values_correct(self, valid_url_and_id):
         """Test that create_product_info_not_found sets correct values."""
         url, product_id = valid_url_and_id
         result = create_product_info_not_found(url, product_id)
         assert result["product_id"] == product_id
         assert result["url"] == url
-        assert result["current_price"] == "N/A"
-        assert result["currency_code"] == "N/A"
+        assert result["current_price"] is None
+        assert result["currency_code"] is None
         assert result["scraped_at"] is None
 
 
@@ -253,6 +253,6 @@ class TestScrapeAllProducts:
 
         assert len(result) == 1
         assert result[0]["page_exists"] is False
-        assert result[0]["current_price"] == "N/A"
-        assert result[0]["currency_code"] == "N/A"
+        assert result[0]["current_price"] is None
+        assert result[0]["currency_code"] is None
         assert result[0]["scraped_at"] is None

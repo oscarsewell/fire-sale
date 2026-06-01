@@ -20,14 +20,14 @@ def fetch_html_content(url: str) -> str:
     if not isinstance(url, str):
         raise TypeError("URL must be a string.")
     try:
-        response = requests.get(url, impersonate="chrome", timeout=10) 
+        response = requests.get(url, impersonate="chrome", timeout=10)
         if response.status_code == 404:
             log.warning("Page not found (404 Error): %s", url)
-            return None  
+            return None
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
         return response.text
-    
+
     except RequestException as e:
         log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
@@ -49,7 +49,7 @@ def extract_product_name(soup: BeautifulSoup) -> str:
         return product_name.strip()
 
     log.warning("Product name not found.")
-    return "N/A"
+    return None
 
 
 def extract_current_price(soup: BeautifulSoup) -> str:
@@ -61,7 +61,7 @@ def extract_current_price(soup: BeautifulSoup) -> str:
         return price.text.strip()
 
     log.warning("Current price not found.")
-    return "N/A"
+    return None
 
 
 def extract_original_price(soup: BeautifulSoup) -> str:
@@ -72,7 +72,8 @@ def extract_original_price(soup: BeautifulSoup) -> str:
         log.debug("Extracted original price successfully: %s", original_price.text.strip())
         return original_price.text.strip()
 
-    log.warning("HTML tag for original price not found; current price identified as original price.")
+    log.warning(
+        "HTML tag for original price not found; current price identified as original price.")
     return extract_current_price(soup)
 
 
@@ -85,7 +86,7 @@ def extract_currency_code(soup: BeautifulSoup) -> str:
         return currency.strip()
 
     log.warning("Currency code not found in HTML.")
-    return "N/A"
+    return None
 
 
 def extract_website_name(url: str, soup: BeautifulSoup) -> str:
@@ -101,7 +102,7 @@ def extract_website_name(url: str, soup: BeautifulSoup) -> str:
         return match.group(1).lower()
 
     log.warning("Website name not found in HTML; unable to extract from URL.")
-    return "N/A"
+    return None
 
 
 def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
@@ -122,11 +123,11 @@ def create_product_info_not_found(url: str) -> dict:
     """Creates product dictionary when page doesn't exist (404)."""
     return {
         "url": url,
-        "product_name": "N/A",
-        "current_price": "N/A",
-        "original_price": "N/A",
-        "currency_code": "N/A",
-        "website_name": "N/A",
+        "product_name": None,
+        "current_price": None,
+        "original_price": None,
+        "currency_code": None,
+        "website_name": None,
         "page_exists": False,
         "scraped_at": None
     }

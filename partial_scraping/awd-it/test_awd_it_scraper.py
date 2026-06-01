@@ -120,7 +120,7 @@ class TestExtractCurrencyCode:
         html = "<html><body>Test</body></html>"
         soup = BeautifulSoup(html, 'html.parser')
         result = extract_currency_code(soup)
-        assert result == "N/A"
+        assert result is None
 
 
 class TestExtractAllProductInfo:
@@ -194,15 +194,15 @@ class TestCreateProductInfoNotFound:
         url, product_id = valid_url_and_id
         result = create_product_info_not_found(url, product_id)
         assert result["page_exists"] is False
-    
+
     def test_create_product_info_not_found_values_correct(self, valid_url_and_id):
         """Test that create_product_info_not_found sets correct values."""
         url, product_id = valid_url_and_id
         result = create_product_info_not_found(url, product_id)
         assert result["product_id"] == product_id
         assert result["url"] == url
-        assert result["current_price"] == "N/A"
-        assert result["currency_code"] == "N/A"
+        assert result["current_price"] is None
+        assert result["currency_code"] is None
         assert result["scraped_at"] is None
 
 
@@ -219,7 +219,8 @@ class TestScrapeAllProducts:
         result = scrape_all_products(valid_urls_and_ids)
         assert len(result) == len(valid_urls_and_ids)
 
-    def test_scrape_all_products_contains_correct_data(self, mock_scraper_functions, valid_urls_and_ids):
+    def test_scrape_all_products_contains_correct_data(self, mock_scraper_functions,
+                                                       valid_urls_and_ids):
         """Test that scrape_all_products contains correct product data."""
         result = scrape_all_products(valid_urls_and_ids)
         # 1st URL
@@ -243,7 +244,7 @@ class TestScrapeAllProducts:
         """Test that scrape_all_products raises error when given None (e.g a failed DB query)."""
         with pytest.raises(TypeError):
             scrape_all_products(None)
-    
+
     @patch("awd_it_scraper.requests.get")
     def test_scrape_all_products_handles_404_error(self, mock_get):
         """Test that scrape_all_products handles 404 errors gracefully."""
@@ -256,6 +257,6 @@ class TestScrapeAllProducts:
 
         assert len(result) == 1
         assert result[0]["page_exists"] is False
-        assert result[0]["current_price"] == "N/A"
-        assert result[0]["currency_code"] == "N/A"
+        assert result[0]["current_price"] is None
+        assert result[0]["currency_code"] is None
         assert result[0]["scraped_at"] is None
