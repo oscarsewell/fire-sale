@@ -73,11 +73,22 @@ def get_db_credentials() -> dict:
         response = secrets_client.get_secret_value(SecretId=secret_arn)
         credentials = json.loads(response["SecretString"])
 
+        password_from_secret = credentials.get("password")
+        if not password_from_secret and credentials.get("password_secret_arn"):
+            password_resp = secrets_client.get_secret_value(
+                SecretId=credentials["password_secret_arn"]
+            )
+            password_obj = json.loads(password_resp["SecretString"])
+            password_from_secret = password_obj.get("password")
+
+        if not password_from_secret:
+            raise ValueError("Database password not found in Secrets Manager payload")
+
         return {
             "host": credentials.get("host"),
             "port": int(credentials.get("port", 5432)),
             "username": credentials.get("username"),
-            "password": credentials.get("password"),
+            "password": password_from_secret,
             "dbname": credentials.get("dbname"),
         }
     except Exception as e:
@@ -89,7 +100,8 @@ def get_tracked_products_by_site() -> dict:
     """Query tracked products from RDS and group by site name.
     Retrieves all products being tracked, groups them by their site name,
     and uses base URL as key for products where site hasn't been cataloged yet."""
-    load_dotenv()  # Load .env file if it exists
+    if load_dotenv is not None:
+        load_dotenv()  # Load .env file if it exists
     credentials = get_db_credentials()
     connection = None
 
@@ -102,18 +114,16 @@ def get_tracked_products_by_site() -> dict:
             database=credentials["dbname"]
         )
 
-        cursor = connection.cursor()
+        with connection.cursor() as cursor:
+            query = """
+                SELECT product_id, p.product_url, sn.site
+                FROM tracked_products tp
+                JOIN products p ON tp.product_id = p.id
+                LEFT JOIN site_names sn ON p.site_id = sn.id
+            """
 
-        query = """
-            SELECT product_id, p.product_url, sn.site
-            FROM tracked_products tp
-            JOIN products p ON tp.product_id = p.id
-            LEFT JOIN site_names sn ON p.site_id = sn.id
-        """
-
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        cursor.close()
+            cursor.execute(query)
+            rows = cursor.fetchall()
 
         # Group products by site
         products_by_site = {}
@@ -146,8 +156,4 @@ def get_tracked_products_by_site() -> dict:
 
 
 if __name__ == "__main__":
-    # load_dotenv()  # Load .env file if it exists
-    # products_by_site = get_tracked_products_by_site()
-    # print(json.dumps(products_by_site, indent=2))
-    # Example usage
-    print(get_base_url("asfsdfafa"))
+    pass

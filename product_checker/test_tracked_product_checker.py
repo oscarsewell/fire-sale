@@ -1,12 +1,10 @@
 """Tests for the tracked product checker lambda."""
 import pytest
-from tracked_product_checker import (
-    get_base_url,
-    get_db_credentials,
-    get_tracked_products_by_site
-)
-import monkeypatch
+import product_checker.tracked_product_checker as tracked_product_checker
 
+get_base_url = tracked_product_checker.get_base_url
+get_db_credentials = tracked_product_checker.get_db_credentials
+get_tracked_products_by_site = tracked_product_checker.get_tracked_products_by_site
 
 def test_get_base_url():
     """Test that get_base_url correctly extracts the base URL from a product URL."""
@@ -36,15 +34,22 @@ def test_get_base_url_raises_on_invalid_url():
         get_base_url(url)
 
 
-def test_get_db_credentials():
-    """Test that get_db_credentials returns a dictionary with the expected keys."""
+def test_get_db_credentials(monkeypatch):
+    """Test that get_db_credentials returns credentials from environment variables."""
+    monkeypatch.setenv("DB_HOST", "localhost")
+    monkeypatch.setenv("DB_USER", "user")
+    monkeypatch.setenv("DB_PASSWORD", "pass")
+    monkeypatch.setenv("DB_PORT", "5432")
+    monkeypatch.setenv("DB_NAME", "db")
+
     credentials = get_db_credentials()
-    assert isinstance(credentials, dict)
-    assert "host" in credentials
-    assert "port" in credentials
-    assert "username" in credentials
-    assert "password" in credentials
-    assert "dbname" in credentials
+    assert credentials == {
+        "host": "localhost",
+        "port": 5432,
+        "username": "user",
+        "password": "pass",
+        "dbname": "db",
+    }
 
 
 def test_get_db_credentials_missing_env_vars(monkeypatch):
