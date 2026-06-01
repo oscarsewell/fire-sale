@@ -1,5 +1,6 @@
 """Tests for the tracked product checker lambda."""
 import pytest
+import psycopg2
 from unittest.mock import Mock, patch
 from tracked_product_checker import (
     get_base_url,
@@ -119,7 +120,6 @@ def test_get_tracked_products_by_site(monkeypatch):
 
 def test_get_tracked_products_by_site_database_error():
     """Test that get_tracked_products_by_site handles database errors gracefully."""
-    import psycopg2
 
     # Mock database connection that raises an error
     mock_connection = Mock()
