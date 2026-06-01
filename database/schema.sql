@@ -59,7 +59,7 @@ CREATE TABLE price_history (
 
 CREATE TABLE discord_link_codes (
   id SERIAL PRIMARY KEY,
-  user_id INT NOT NULL UNIQUE,
+  user_id INT NOT NULL,
   code VARCHAR(255) NOT NULL UNIQUE,
   expires_at TIMESTAMP NOT NULL,
   used_at TIMESTAMP,
