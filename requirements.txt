@@ -2,3 +2,5 @@ pytest
 pylint
 beautifulsoup4
 requests
+psycopg2-binary
+boto3
