@@ -5,10 +5,11 @@ and convert timestamp strings to datetime objects."""
 
 # dictionary format:
 # {
+# "product_id": 67
 # "product_name": "",
 # "original_price": "$999.00"
 # "current_price": "$899.00",
-# "currency": "USD",
+# "currency_code": "USD"
 # "url": "",
 # "website_name": "EBuyer",
 # "scraped_at": "[timestamp]"
@@ -195,6 +196,7 @@ def clean_product_data(product: dict) -> dict:
 
 if __name__ == "__main__":
     example_product = {
+        "product_id": 67,
         "product_name": "  Apple iPhone 13 Pro Max  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",

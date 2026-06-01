@@ -1,10 +1,31 @@
+# Data source for c23 VPC
+data "aws_vpc" "main" {
+	filter {
+		name   = "tag:Name"
+		values = ["c23-VPC"]
+	}
+}
+
+# Data sources for c23 public subnets
+data "aws_subnets" "public" {
+	filter {
+		name   = "vpc-id"
+		values = [data.aws_vpc.main.id]
+	}
+
+	filter {
+		name   = "tag:Name"
+		values = ["c23-public-subnet-*"]
+	}
+}
+
 # RDS security group — ingress rules reference the Lambda VPC SG (lambdas.tf)
 # and ECS SG (ecs.tf); Terraform resolves cross-file dependencies automatically.
 
 resource "aws_security_group" "rds" {
 	name        = "${var.project_name}-${var.environment}-rds"
 	description = "Allow inbound PostgreSQL from VPC-attached Lambda functions and ECS tasks."
-	vpc_id      = var.vpc_id
+	vpc_id      = data.aws_vpc.main.id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "rds_from_ecs" {
@@ -27,7 +48,7 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_internet" {
 
 resource "aws_db_subnet_group" "main" {
 	name       = "${var.project_name}-${var.environment}"
-	subnet_ids = var.subnet_ids
+	subnet_ids = data.aws_subnets.public.ids
 }
 
 resource "aws_db_instance" "main" {

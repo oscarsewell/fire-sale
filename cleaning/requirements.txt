@@ -1,2 +1,4 @@
 regex
-iso4217
+psycopg2
+python-dotenv
+iso4217 

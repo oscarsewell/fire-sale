@@ -10,7 +10,7 @@ data "aws_ecs_cluster" "main" {
 resource "aws_security_group" "ecs" {
 	name        = "${var.project_name}-${var.environment}-ecs"
 	description = "Security group for ECS Fargate tasks (dashboard and Discord bot)."
-	vpc_id      = var.vpc_id
+	vpc_id      = data.aws_vpc.main.id
 }
 
 resource "aws_vpc_security_group_egress_rule" "ecs_all_outbound" {
@@ -267,7 +267,7 @@ resource "aws_ecs_service" "dashboard" {
 	desired_count   = 1
 
 	network_configuration {
-		subnets          = var.ecs_subnet_ids
+		subnets          = data.aws_subnets.public.ids
 		security_groups  = [aws_security_group.ecs.id]
 		assign_public_ip = true
 	}
@@ -286,7 +286,7 @@ resource "aws_ecs_service" "discord_bot" {
 	desired_count   = 1
 
 	network_configuration {
-		subnets          = var.ecs_subnet_ids
+		subnets          = data.aws_subnets.public.ids
 		security_groups  = [aws_security_group.ecs.id]
 		assign_public_ip = true
 	}
