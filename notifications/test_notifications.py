@@ -1,6 +1,15 @@
 """test file for notifications.py"""
 import pytest
-from notifications import should_notify_percentage, evaluate_notification, create_notification_message, send_discord_notification, send_notification, send_email_notification, process_notifications, get_currency_symbol
+from notifications import (
+     should_notify_percentage,
+     evaluate_notification,
+     create_notification_message,
+     send_discord_notification,
+     send_notification,
+     send_email_notification,
+     process_notifications,
+     get_currency_symbol,
+ )
 from unittest.mock import patch
 
 
