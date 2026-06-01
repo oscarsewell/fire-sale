@@ -4,3 +4,7 @@ beautifulsoup4
 requests
 psycopg2-binary
 boto3
+pytest-cov
+regex
+curl_cffi
+currency-symbols

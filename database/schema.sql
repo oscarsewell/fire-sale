@@ -1,31 +1,48 @@
 DROP TABLE IF EXISTS price_history;
 DROP TABLE IF EXISTS tracked_products;
+DROP TABLE IF EXISTS passwords;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS users;
-DROP TYPE IF EXISTS notification_type;
-
--- ENUM type for notification destinations
-CREATE TYPE notification_type AS ENUM ('email', 'discord');
+DROP TABLE IF EXISTS site_names;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  notification_destination notification_type NOT NULL,
-  user_contact VARCHAR(255) NOT NULL UNIQUE            -- email or discord handle (depending on notification_destination)
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  discord VARCHAR(255) UNIQUE
+);
+
+CREATE TABLE passwords (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  salt VARCHAR(255) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE site_names (
+  id SERIAL PRIMARY KEY,
+  site VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
   product_url VARCHAR(2048) NOT NULL UNIQUE,
   product_name VARCHAR(255) NOT NULL,
-  site_name VARCHAR(255) NOT NULL,
-  currency VARCHAR(3) NOT NULL
+  site_id INT NOT NULL,
+  currency VARCHAR(3) NOT NULL,
+  page_exists BOOLEAN NOT NULL DEFAULT TRUE,
+  FOREIGN KEY (site_id) REFERENCES site_names(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_products_site_id ON products(site_id);
 
 CREATE TABLE tracked_products (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
   product_id INT NOT NULL,
-  target_discount INT NOT NULL,
+  target_price INT NOT NULL,
+  original_price INT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
   CONSTRAINT unique_user_product UNIQUE (user_id, product_id) -- prevents duplicate tracking
@@ -35,7 +52,6 @@ CREATE TABLE price_history (
   id SERIAL PRIMARY KEY,
   product_id INT NOT NULL,
   current_price INT NOT NULL,
-  original_price INT NOT NULL,
   scraped_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );

@@ -200,7 +200,7 @@ def test_clean_product_data():
     assert result["product_name"] == "Apple iPhone 13"
     assert result["original_price"] == 109900
     assert result["current_price"] == 99900
-    assert result["currency"] == "USD"
+    assert result["currency_code"] == "USD"
     assert result["scraped_at"] == datetime(
         2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
 
