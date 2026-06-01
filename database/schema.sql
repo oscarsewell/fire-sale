@@ -31,7 +31,7 @@ CREATE TABLE products (
   product_name VARCHAR(255) NOT NULL,
   site_id INT NOT NULL,
   currency VARCHAR(3) NOT NULL,
-  product_exists BOOLEAN NOT NULL DEFAULT TRUE,
+  page_exists BOOLEAN NOT NULL DEFAULT TRUE,
   FOREIGN KEY (site_id) REFERENCES site_names(id) ON DELETE CASCADE
 );
 
