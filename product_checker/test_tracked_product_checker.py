@@ -78,6 +78,9 @@ def test_get_tracked_products_by_site(monkeypatch):
         (3, "https://www.overclockers.co.uk/product/1", "overclockers"),
         (4, "https://www.unknown-site.com/product/1", None),  # site_name is NULL
     ]
+    # Make cursor support context manager protocol
+    mock_cursor.__enter__ = Mock(return_value=mock_cursor)
+    mock_cursor.__exit__ = Mock(return_value=None)
 
     # Mock database connection
     mock_connection = Mock()
@@ -97,3 +100,11 @@ def test_get_tracked_products_by_site(monkeypatch):
     assert len(products_by_site["ebuyer"]) == 2
     assert len(products_by_site["overclockers"]) == 1
     assert len(products_by_site["www.unknown-site.com"]) == 1
+
+    # Assert products are lists
+    assert products_by_site["ebuyer"] == [
+        [1, "https://www.ebuyer.com/product/1"], [2, "https://www.ebuyer.com/product/2"]]
+    assert products_by_site["overclockers"] == [
+        [3, "https://www.overclockers.co.uk/product/1"]]
+    assert products_by_site["www.unknown-site.com"] == [[4,
+                                                         "https://www.unknown-site.com/product/1"]]
