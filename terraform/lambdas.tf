@@ -345,7 +345,8 @@ resource "aws_lambda_function" "tracked_product_checker" {
 
 	environment {
 		variables = {
-			ENVIRONMENT = var.environment
+			ENVIRONMENT   = var.environment
+			DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
 		}
 	}
 }
