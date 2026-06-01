@@ -126,15 +126,15 @@ def mark_products_defunct(
 if __name__ == "__main__":
     load_dotenv()  # Load .env file if it exists
 
-    credentials = get_db_credentials()
+    db_credentials = get_db_credentials()
 
     # Example usage
     db_connection = psycopg2.connect(
-        dbname=credentials["dbname"],
-        user=credentials["username"],
-        password=credentials["password"],
-        host=credentials["host"],
-        port=credentials["port"]
+        dbname=db_credentials["dbname"],
+        user=db_credentials["username"],
+        password=db_credentials["password"],
+        host=db_credentials["host"],
+        port=db_credentials["port"]
     )
     product_test = {
         "product_id": "1",
@@ -142,7 +142,8 @@ if __name__ == "__main__":
         "current_price": 59999,
         "original_price": 69999,
         "currency_code": "GBP",
-        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070-12g-ventus-2x-oc-705988#colcode=70598803",
+        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070"
+        "-12g-ventus-2x-oc-705988#colcode=70598803",
         "website_name": "Ebuyer",
         "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     }
