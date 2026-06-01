@@ -14,7 +14,7 @@ CREATE TABLE users (
 
 CREATE TABLE passwords (
   id SERIAL PRIMARY KEY,
-  user_id INT NOT NULL,
+  user_id INT NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   salt VARCHAR(255) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
