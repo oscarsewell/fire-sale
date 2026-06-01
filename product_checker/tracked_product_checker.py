@@ -89,6 +89,7 @@ def get_tracked_products_by_site() -> dict:
     """Query tracked products from RDS and group by site name.
     Retrieves all products being tracked, groups them by their site name,
     and uses base URL as key for products where site hasn't been cataloged yet."""
+    load_dotenv()  # Load .env file if it exists
     credentials = get_db_credentials()
     connection = None
 
