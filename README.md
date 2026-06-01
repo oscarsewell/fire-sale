@@ -19,10 +19,9 @@ The key phases of this project:
 - `Dashboard`
 
 Other folders:
-- `.github`
-- `Tests`
-- `Terraform`
-
+- `.github/`
+- `tests/`
+- `terraform/`
 ## Setup & Installation
 
 ## Development
