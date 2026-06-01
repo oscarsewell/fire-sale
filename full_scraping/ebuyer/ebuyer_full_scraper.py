@@ -118,7 +118,7 @@ def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
         "original_price": extract_original_price(soup),
         "currency_code": extract_currency_code(soup),
         "website_name": extract_website_name(url, soup),
-        "exists": True,
+        "page_exists": True,
         "scraped_at": datetime.now().isoformat()
     }
 
@@ -132,7 +132,7 @@ def create_product_info_not_found(url: str) -> dict:
         "original_price": "N/A",
         "currency_code": "N/A",
         "website_name": "N/A",
-        "exists": False,
+        "page_exists": False,
         "scraped_at": None
     }
 
@@ -158,7 +158,7 @@ def scrape_all_products(urls: list) -> list[dict]:
             products.append(product_info)
 
         except Exception as e:
-            log.error("Failed to scrape URL: %s", url, e)
+            log.error("Failed to scrape URL: %s - %s", url, e)
 
     return products
 

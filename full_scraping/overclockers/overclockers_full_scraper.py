@@ -113,7 +113,7 @@ def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
         "original_price": extract_original_price(soup),
         "currency_code": extract_currency_code(soup),
         "website_name": extract_website_name(url, soup),
-        "exists": True,
+        "page_exists": True,
         "scraped_at": datetime.now().isoformat()
     }
 
@@ -127,7 +127,7 @@ def create_product_info_not_found(url: str) -> dict:
         "original_price": "N/A",
         "currency_code": "N/A",
         "website_name": "N/A",
-        "exists": False,
+        "page_exists": False,
         "scraped_at": None
     }
 
