@@ -6,18 +6,19 @@ from bs4 import BeautifulSoup
 
 
 @pytest.fixture
-def valid_urls():
-    """Fixture for a list of URLs, each for a different product on the same website."""
+def valid_urls_and_ids():
+    """Fixture for a list of tuples containing URLs and IDs, 
+    each for a different product on the same website."""
     return [
-        "https://www.store.com/product1",
-        "https://www.store.com/product2"    
+        ("https://www.store.com/product1", 1),
+        ("https://www.store.com/product2", 2)    
     ]
 
 
 @pytest.fixture
-def valid_url():
-    """Fixture for a single product URL."""
-    return "https://www.store.com/product1"
+def valid_url_and_id():
+    """Fixture for a single product URL and ID."""
+    return ("https://www.store.com/product1", 1)
 
 
 @pytest.fixture

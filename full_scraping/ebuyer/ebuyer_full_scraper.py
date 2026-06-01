@@ -23,13 +23,16 @@ def fetch_html_content(url: str) -> str:
 
     try:
         response = requests.get(url, impersonate="chrome", timeout=10)
+        if response.status_code == 404:
+            log.warning("Page not found (404 Error): %s", url)
+            return None  
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
+        return response.text
+    
     except RequestException as e:
-        log.error("Failed to fetch HTML content from URL: %s", url, e)
+        log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
-
-    return response.text
 
 
 def parse_html_content(content: str) -> BeautifulSoup:
@@ -107,20 +110,35 @@ def extract_website_name(url: str, soup: BeautifulSoup) -> str:
 
 
 def extract_all_product_info(url: str, soup: BeautifulSoup) -> dict:
-    """Extracts and returns relevant data for each product as a dictionary."""
+    """For existing URLs, extracts and returns relevant data for each product as a dictionary."""
     return {
+        "url": url, 
         "product_name": extract_product_name(soup), 
         "current_price": extract_current_price(soup),
         "original_price": extract_original_price(soup),
         "currency_code": extract_currency_code(soup),
-        "url": url, 
-        "website_name": extract_website_name(url, soup), 
+        "website_name": extract_website_name(url, soup),
+        "exists": True,
         "scraped_at": datetime.now().isoformat()
     }
 
-def scrape_all_products(urls: list[str]) -> list[dict]:
+
+def create_product_info_not_found(url: str) -> dict:
+    """Creates product dictionary when page doesn't exist (404)."""
+    return {
+        "url": url,
+        "product_name": "N/A",
+        "current_price": "N/A",
+        "original_price": "N/A",
+        "currency_code": "N/A",
+        "website_name": "N/A",
+        "exists": False,
+        "scraped_at": None
+    }
+
+
+def scrape_all_products(urls: list) -> list[dict]:
     """Scrapes information on all products from a given list of URLs."""
-    # The script which passes list of URLs to this function should handle: empty list, None
     if not isinstance(urls, list):
         raise TypeError("Must pass a list of URLs.")
 
@@ -130,10 +148,15 @@ def scrape_all_products(urls: list[str]) -> list[dict]:
     for url in urls:
         try:
             response = fetch_html_content(url)
-            soup = parse_html_content(response)
-            product_info = extract_all_product_info(url, soup)
+
+            if response is None: # Page doesn't exist anymore (404)
+                product_info = create_product_info_not_found(url)
+            else:
+                soup = parse_html_content(response)
+                product_info = extract_all_product_info(url, soup)
+                log.info("Successfully scraped product information from URL: %s", url)
             products.append(product_info)
-            log.info("Successfully scraped product information from URL: %s", url)
+
         except Exception as e:
             log.error("Failed to scrape URL: %s", url, e)
 
@@ -145,24 +168,6 @@ if __name__ == "__main__":
     urls = [
         "https://www.ebuyer.com/msi-msi-katana-15-inch-gaming-laptop---intel-core-i7-16gb-512gb-ssd-rtx-5060-705530#colcode=70553003"
     ]
-
-    html_content = fetch_html_content(urls[0])
-    parsed_content = parse_html_content(html_content)
-
-    product_name = extract_product_name(parsed_content)
-    print(f"Product Name: {product_name}")
-
-    current_price = extract_current_price(parsed_content)
-    print(f"Current Price: {current_price}")
-
-    original_price = extract_original_price(parsed_content)
-    print(f"Original Price: {original_price}")
-
-    currency_code = extract_currency_code(parsed_content)
-    print(f"Currency Code: {currency_code}")
-
-    website_name = extract_website_name(urls[0], parsed_content)
-    print(f"Website Name: {website_name}")
 
     scraped_products = scrape_all_products(urls)
     for product in scraped_products:

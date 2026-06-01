@@ -104,8 +104,8 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
-    with patch("overclockers_scraper.fetch_html_content") as mock_fetch, \
-         patch("overclockers_scraper.parse_html_content") as mock_parse:
+    with patch("overclockers_full_scraper.fetch_html_content") as mock_fetch, \
+         patch("overclockers_full_scraper.parse_html_content") as mock_parse:
         # To handle multiple URLs
         mock_fetch.side_effect = [mock_html_content, mock_html_content_no_original_price]
         mock_parse.side_effect = [mock_soup, mock_soup_no_original_price]
