@@ -11,6 +11,7 @@ The team members on this project are:
 
 ## Project Structure
 The key phases of this project:
+- `tracking/`
 - `scraping/`
 - `cleaning/`
 - `notifications/`
