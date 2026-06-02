@@ -69,8 +69,8 @@ def test_submit_high_discount(form):
 @pytest.mark.parametrize("valid_url", [
     "awd-it.co.uk/product",
     "www.ebuyer.com/product",
-    "https://overclockers.com/product#anchor",
-    "https://overclockers.com/product?id=123&color=red",
+    "https://overclockers.co.uk/product#anchor",
+    "https://overclockers.co.uk/product?id=123&color=red",
 ])
 def test_submit_various_valid_urls_shows_success_message(form, valid_url):
     """Tests that various valid URL formats are accepted."""
