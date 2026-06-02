@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS discord_link_codes;
 DROP TABLE IF EXISTS price_history;
 DROP TABLE IF EXISTS tracked_products;
 DROP TABLE IF EXISTS passwords;
@@ -56,6 +57,16 @@ CREATE TABLE price_history (
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+CREATE TABLE discord_link_codes (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  code VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_tracked_products_user ON tracked_products(user_id);
 CREATE INDEX idx_tracked_products_product ON tracked_products(product_id);
 CREATE INDEX idx_price_history_product_scraped ON price_history(product_id, scraped_at DESC);
+CREATE INDEX idx_discord_link_codes_user ON discord_link_codes(user_id);
