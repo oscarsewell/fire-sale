@@ -1,7 +1,7 @@
 """Database layer for the Fire Sale dashboard.
 
 Credentials are resolved in priority order:
-  1. Individual env vars: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
+  1. Individual env vars: DB_HOST, DB_USER, DB_PASSWORD, DB_PORT, DB_NAME
   2. AWS Secrets Manager via DB_SECRET_ARN
 """
 import json
@@ -17,9 +17,9 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
-load_dotenv()
-
 logger = logging.getLogger(__name__)
+
+secrets_client = boto3.client("secretsmanager")
 
 
 # ---------------------------------------------------------------------------
@@ -27,39 +27,66 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def _get_credentials() -> dict:
+    """Retrieve database credentials from environment or AWS Secrets Manager.
+
+    First attempts to load from environment variables (set via .env or ECS env).
+    Falls back to AWS Secrets Manager if environment variables are not found.
+    """
+    load_dotenv()
+
     host = os.getenv("DB_HOST")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
-    port = os.getenv("DB_PORT", "5432")
+    port = os.getenv("DB_PORT")
     dbname = os.getenv("DB_NAME")
 
-    if all([host, user, password, dbname]):
+    # If all env vars are present, use them
+    if all([host, user, password, port, dbname]):
+        logger.info("Using credentials from environment variables")
         return {
             "host": host,
             "port": int(port),
-            "user": user,
+            "username": user,
             "password": password,
             "dbname": dbname,
         }
 
-    secret_arn = os.getenv("DB_SECRET_ARN")
-    if not secret_arn:
-        raise EnvironmentError(
-            "Provide DB_HOST/DB_USER/DB_PASSWORD/DB_NAME/DB_PORT "
-            "or set DB_SECRET_ARN for AWS Secrets Manager."
-        )
+    # Otherwise, fall back to AWS Secrets Manager (ECS / production)
+    try:
+        secret_arn = os.getenv("DB_SECRET_ARN")
+        if not secret_arn:
+            raise ValueError(
+                "DB_SECRET_ARN not set and environment variables incomplete. "
+                "Either set DB_HOST, DB_USER, DB_PASSWORD, DB_PORT, DB_NAME "
+                "or set DB_SECRET_ARN for AWS Secrets Manager."
+            )
 
-    region = os.getenv("AWS_REGION", "eu-west-2")
-    client = boto3.client("secretsmanager", region_name=region)
-    resp = client.get_secret_value(SecretId=secret_arn)
-    creds = json.loads(resp["SecretString"])
-    return {
-        "host": creds["host"],
-        "port": int(creds.get("port", 5432)),
-        "user": creds["username"],
-        "password": creds["password"],
-        "dbname": creds["dbname"],
-    }
+        logger.info("Using credentials from AWS Secrets Manager")
+        response = secrets_client.get_secret_value(SecretId=secret_arn)
+        credentials = json.loads(response["SecretString"])
+
+        password_from_secret = credentials.get("password")
+        if not password_from_secret and credentials.get("password_secret_arn"):
+            password_resp = secrets_client.get_secret_value(
+                SecretId=credentials["password_secret_arn"]
+            )
+            password_obj = json.loads(password_resp["SecretString"])
+            password_from_secret = password_obj.get("password")
+
+        if not password_from_secret:
+            raise ValueError(
+                "Database password not found in Secrets Manager payload")
+
+        return {
+            "host": credentials.get("host"),
+            "port": int(credentials.get("port", 5432)),
+            "username": credentials.get("username"),
+            "password": password_from_secret,
+            "dbname": credentials.get("dbname"),
+        }
+    except Exception as e:
+        logger.error("Failed to retrieve database credentials: %s", str(e))
+        raise
 
 
 @contextmanager
@@ -67,7 +94,12 @@ def get_db():
     """Yield a psycopg2 connection; commit on success, rollback on error."""
     creds = _get_credentials()
     conn = psycopg2.connect(
-        cursor_factory=psycopg2.extras.RealDictCursor, **creds
+        host=creds["host"],
+        port=creds["port"],
+        user=creds["username"],
+        password=creds["password"],
+        database=creds["dbname"],
+        cursor_factory=psycopg2.extras.RealDictCursor,
     )
     try:
         yield conn
