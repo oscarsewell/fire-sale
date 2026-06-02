@@ -3,8 +3,8 @@
 import pytest
 from streamlit.testing.v1 import AppTest
 from form import (
-    extract_website_name, 
-    is_website_supported, 
+    extract_website_name,
+    is_website_supported,
     check_url_scrapable,
     get_scraper_path
 )
@@ -141,15 +141,15 @@ def test_extract_website_name_returns_lowercase():
 # Tests for website support
 def test_is_website_supported_valid_domains():
     """Tests that supported websites are recognized."""
-    assert is_website_supported("awd-it") == True
-    assert is_website_supported("ebuyer") == True
-    assert is_website_supported("overclockers") == True
+    assert is_website_supported("awd-it") is True
+    assert is_website_supported("ebuyer") is True
+    assert is_website_supported("overclockers") is True
 
 
 def test_is_website_supported_invalid_domains():
     """Tests that unsupported websites are not recognized."""
-    assert is_website_supported("amazon") == False
-    assert is_website_supported("example") == False
+    assert is_website_supported("amazon") is False
+    assert is_website_supported("example") is False
 
 
 # Tests for URL scrapability
