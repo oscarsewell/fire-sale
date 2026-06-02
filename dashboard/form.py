@@ -15,7 +15,7 @@ def page_title(title: str):
 def url_input_field() -> str:
     """Creates a text input field for the product URL."""
     return st.text_input(
-        label="Product URL", 
+        label="Product URL",
         placeholder="https://website.com/product"
     )
 
@@ -23,8 +23,8 @@ def url_input_field() -> str:
 def discount_input_field() -> int:
     """Creates a number input field for the target discount."""
     return st.number_input(
-        label="Target Discount (GBP)", 
-        min_value=0, 
+        label="Target Discount (GBP)",
+        min_value=0,
         step=10
     )
 
@@ -38,12 +38,12 @@ def validate_submission(url: str, discount: int) -> dict:
     """Validates the form submission and collects all errors."""
     errors = []
     domain = check_url_scrapable(url)
-    
+
     if not domain:
         errors.append("Please enter a valid URL from our supported websites")
     if discount <= 0:
         errors.append("Please enter a discount over £0")
-    
+
     return {
         'is_valid': not errors,
         'errors': errors,
@@ -55,7 +55,7 @@ def track_product(domain: str, url: str, discount: int) -> None:
     """Tracks a product using the appropriate scraper."""
     scraper_path = get_scraper_path(domain)
     products = call_scraper(scraper_path, url)
-    
+
     if products:
         st.success(f"Success! Now tracking this product at a £{discount} target discount")
         display_product_info(products[0], domain) # The scraper returns a list of products
@@ -83,14 +83,14 @@ def submission_outcome(url: str, discount: int) -> None:
 def form():
     """Builds the form for adding a new product to track."""
     st.markdown("Add a new product to track")
-    
+
     # Input fields
     url = url_input_field()
     target_discount = discount_input_field()
-    
+
     # Submit button
     submitted = submit_button()
-    
+
     if submitted:
         submission_outcome(url, target_discount)
 
