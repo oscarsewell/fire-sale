@@ -69,3 +69,4 @@ CREATE TABLE discord_link_codes (
 CREATE INDEX idx_tracked_products_user ON tracked_products(user_id);
 CREATE INDEX idx_tracked_products_product ON tracked_products(product_id);
 CREATE INDEX idx_price_history_product_scraped ON price_history(product_id, scraped_at DESC);
+CREATE INDEX idx_discord_link_codes_user ON discord_link_codes(user_id);
