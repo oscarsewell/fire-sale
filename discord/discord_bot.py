@@ -53,11 +53,11 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Hardware Hound is online.")
 
 
-@tree.command(name="track", description="Track a product by URL and target discount")
+@tree.command(name="track", description="Track a product by URL and target price")
 async def track(
         interaction: discord.Interaction,
         product_url: str,
-        target_discount: int):
+        target_price: int):
     """Responds to /track to set up tracking for a product"""
     website_name = validate_product_url(product_url)
 
@@ -69,9 +69,9 @@ async def track(
         )
         return
 
-    if not validate_target_discount(target_discount):
+    if not validate_target_discount(target_price):
         await interaction.response.send_message(
-            "Please enter a valid target discount percentage between 0 and 100.",
+            "Please enter a valid target price.",
             ephemeral=True
         )
         return
@@ -91,17 +91,22 @@ async def track(
     async def confirm_callback(button_interaction):
         try:
             discord_user_id = button_interaction.user.id
-            user_id = insert_discord_user(discord_user_id)
+
+            user_id = insert_discord_user(
+                discord_user_id, username=button_interaction.user.name)
+
             product_id = get_or_create_product(
                 product_url=product_url, product_name="Not set", site_name=website_name, currency="GBP",)
-            add_tracking(user_id, product_id, target_discount)
+
+            add_tracking(user_id=user_id, product_id=product_id,
+                         target_price=target_price, original_price=0)
 
             await button_interaction.response.edit_message(
                 content=(
                     "Tracking confirmed!\n\n"
                     f"Website: {website_name}\n\n"
                     f"URL: {product_url}\n\n"
-                    f"Target Discount: {target_discount}%\n"
+                    f"Target Price: {target_price}\n"
                 ),
                 view=None
             )
@@ -131,7 +136,7 @@ async def track(
         f"You're about to track the following product:\n\n"
         f"Website: {website_name}\n\n"
         f"Product URL: {product_url}\n\n"
-        f"Target Discount: {target_discount}%\n\n",
+        f"Target Price: {target_price}\n\n",
         view=view,
         ephemeral=True
     )
@@ -143,7 +148,7 @@ async def help_command(interaction: discord.Interaction):
     await interaction.response.send_message(
         "**Hardware Hound Bot Commands:**\n\n"
         "`/ping` - Check if the bot is online\n"
-        "`/track` - Track a product by URL and target discount\n"
+        "`/track` - Track a product by URL and target price\n"
         "`/list` - Show your tracked products\n"
         "`/untrack` - Stop tracking a product\n"
         "`/help` - Show this help message\n",
@@ -170,7 +175,8 @@ async def list_command(interaction: discord.Interaction):
                 f"\n**{index}. {product['product_name']}**"
                 f"ID: {product['product_id']}\n"
                 f"Store: {product['site_name']}\n"
-                f"Target Discount: {product['target_discount']}%\n"
+                f"Original Price: {product['currency']}{product['original_price']}\n"
+                f"Target Price: {product['currency']}{product['target_price']}\n"
                 f"URL: {product['product_url']}\n"
             )
 
