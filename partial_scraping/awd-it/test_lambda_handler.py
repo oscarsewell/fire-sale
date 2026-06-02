@@ -78,7 +78,7 @@ def test_lambda_handler_missing_awd_it_site():
 
 
 def test_lambda_handler_transforms_output_format():
-    """Test that lambda_handler transforms exists to page_exists."""
+    """Test that lambda_handler passes through page_exists."""
     mock_products_by_site = {
         "awd-it": [[1, "https://www.awd-it.co.uk/product/1"]],
     }
