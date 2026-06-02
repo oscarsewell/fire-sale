@@ -3,3 +3,4 @@ psycopg2-binary
 bcrypt
 boto3
 python-dotenv
+pytest-cov

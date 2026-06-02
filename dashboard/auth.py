@@ -1,7 +1,7 @@
 """Authentication logic for Hardware Hound."""
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 
@@ -35,7 +35,7 @@ def register_user(username: str, email: str, plain_password: str) -> dict:
         "Attempting to register new user: username=%s, email=%s", username, email)
     password_hash, salt = hash_password(plain_password)
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=24)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     try:
         with get_db() as conn:
@@ -47,9 +47,9 @@ def register_user(username: str, email: str, plain_password: str) -> dict:
                 if cur.fetchone():
                     logger.warning(
                         "Registration failed – username "
-                        "or email already in use: %s / %s", 
+                        "or email already in use: %s / %s",
                         username, email
-                        )
+                    )
                     raise ValueError("Username or email is already in use.")
 
                 cur.execute(
@@ -73,9 +73,9 @@ def register_user(username: str, email: str, plain_password: str) -> dict:
                     (user_id, token, expires_at),
                 )
                 logger.debug(
-                    "Inserted verification token for user_id=%s, expires_at=%s", 
+                    "Inserted verification token for user_id=%s, expires_at=%s",
                     user_id, expires_at
-                    )
+                )
     except ValueError:
         raise
     except Exception as exc:
@@ -142,7 +142,7 @@ def verify_email_token(token: str) -> bool:
     Returns True on success, False if the token is missing, already used, or expired.
     """
     logger.info("Processing email verification token")
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     try:
         with get_db() as conn:
@@ -160,16 +160,16 @@ def verify_email_token(token: str) -> bool:
 
                 if row["used_at"] is not None:
                     logger.warning(
-                        "Verification failed – token already used (user_id=%s, used_at=%s)", 
+                        "Verification failed – token already used (user_id=%s, used_at=%s)",
                         row["user_id"], row["used_at"]
-                        )
+                    )
                     return False
 
                 if row["expires_at"] < now:
                     logger.warning(
-                        "Verification failed – token expired (user_id=%s, expired_at=%s)", 
+                        "Verification failed – token expired (user_id=%s, expired_at=%s)",
                         row["user_id"], row["expires_at"]
-                        )
+                    )
                     return False
 
                 cur.execute(
