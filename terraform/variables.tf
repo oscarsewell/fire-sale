@@ -27,7 +27,7 @@ variable "aws_region" {
 variable "scraper_names" {
 	description = "List of website slugs to scrape. Each entry gets its own Lambda function and ECR repository. Add a new slug here to support a new retailer."
 	type        = list(string)
-	default     = ["overclockers", "ebuyer", "scan"]
+	default     = ["overclockers", "ebuyer", "awd-it"]
 }
 
 # ── Container images ──────────────────────────────────────────────────────────
