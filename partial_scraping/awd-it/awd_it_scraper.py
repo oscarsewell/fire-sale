@@ -26,7 +26,7 @@ def fetch_html_content(url: str) -> str:
         response.raise_for_status()
         log.debug("Successfully fetched HTML content from URL: %s", url)
         return response.text
-    
+
     except RequestException as e:
         log.error("Failed to fetch HTML content from URL: %s - %s", url, e)
         raise
@@ -48,7 +48,7 @@ def extract_current_price(soup: BeautifulSoup) -> str:
         return price.text.strip()
 
     log.warning("Current price not found.")
-    return "N/A"
+    return None
 
 
 def extract_currency_code(soup: BeautifulSoup) -> str:
@@ -60,7 +60,7 @@ def extract_currency_code(soup: BeautifulSoup) -> str:
         return currency.strip()
 
     log.warning("Currency code not found in HTML.")
-    return "N/A"
+    return None
 
 
 def extract_all_product_info(url: str, product_id: int, soup: BeautifulSoup) -> dict:
@@ -80,8 +80,8 @@ def create_product_info_not_found(url: str, product_id: int) -> dict:
     return {
         "product_id": product_id,
         "url": url,
-        "current_price": "N/A",
-        "currency_code": "N/A",
+        "current_price": None,
+        "currency_code": None,
         "page_exists": False,
         "scraped_at": None
     }
@@ -113,7 +113,7 @@ def scrape_all_products(urls_and_ids: list[tuple]) -> list[dict]:
 
     return products
 
-        
+
 if __name__ == "__main__":
     # Example usage
     urls_and_ids = [

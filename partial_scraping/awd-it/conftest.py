@@ -11,7 +11,7 @@ def valid_urls_and_ids():
     each for a different product on the same website."""
     return [
         ("https://www.store.com/product1", 1),
-        ("https://www.store.com/product2", 2)    
+        ("https://www.store.com/product2", 2)
     ]
 
 
@@ -106,7 +106,7 @@ def mock_soup_with_whitespace(mock_html_content_with_whitespace):
 
 
 @pytest.fixture
-def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price, 
+def mock_scraper_functions(mock_html_content, mock_soup, mock_html_content_no_original_price,
                            mock_soup_no_original_price):
     """Fixture that patches and pre-configures scraper functions."""
     with patch("awd_it_scraper.fetch_html_content") as mock_fetch, \
