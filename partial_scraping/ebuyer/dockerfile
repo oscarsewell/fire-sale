@@ -12,6 +12,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY awd_it_scraper.py .
+COPY ebuyer_scraper.py .
 
-CMD ["awd_it_scraper.handler"]
+CMD ["ebuyer_scraper.handler"]
