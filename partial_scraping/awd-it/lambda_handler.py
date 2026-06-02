@@ -36,7 +36,7 @@ def lambda_handler(event, context):
                 "url": product["url"],
                 "current_price": product["current_price"],
                 "scraped_at": product["scraped_at"],
-                "page_exists": product["exists"]
+                "page_exists": product["page_exists"]
             })
 
         logger.info("Successfully scraped %d products", len(output_products))
