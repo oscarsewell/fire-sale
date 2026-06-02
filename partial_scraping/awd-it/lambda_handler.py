@@ -1,4 +1,4 @@
-"""AWS Lambda handler that scrapes product data from URLs provided by tracked_product_checker."""
+"""AWS Lambda handler that scrapes product data from URLs for awd-it products"""
 import json
 import logging
 
@@ -9,9 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def lambda_handler(event, context):
-    """AWS Lambda handler that scrapes product data from URLs."""
+    """AWS Lambda handler for scraping awd-it products"""
     try:
-        # Parse the event - handle both direct dict and Lambda response format
         products_by_site = event
         if isinstance(event, str):
             products_by_site = json.loads(event)
@@ -22,18 +21,14 @@ def lambda_handler(event, context):
 
         logger.info("Processing products from %d sites", len(products_by_site))
 
-        # Flatten all products into a single list of (url, product_id) tuples
+        awd_it_products = products_by_site.get("awd-it", [])
+
         urls_and_ids = []
-        for site_products in products_by_site.values():
-            for product_id, product_url in site_products:
-                urls_and_ids.append((product_url, product_id))
+        for product_id, product_url in awd_it_products:
+            urls_and_ids.append((product_url, product_id))
 
-        logger.info("Scraping %d products", len(urls_and_ids))
-
-        # Scrape all products
         scraped_products = scrape_all_products(urls_and_ids)
 
-        # Transform to output format
         output_products = []
         for product in scraped_products:
             output_products.append({
