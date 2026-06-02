@@ -12,6 +12,7 @@ def form():
     return at
 
 
+# Rendering
 def test_form_page_renders(form):
     """Tests that the form page renders without errors and contains the expected input fields."""
     assert len(form.text_input) == 1
@@ -19,6 +20,7 @@ def test_form_page_renders(form):
     assert len(form.button) == 1
 
 
+# Verifying displayed content
 def test_form_title_displays(form):
     """Tests that the page title 'Product Tracking Form' is displayed."""
     assert "Product Tracking Form" in form.title[0].value
@@ -39,6 +41,7 @@ def test_discount_input_default_value(form):
     assert form.number_input[0].value == 0
 
 
+# Form submission success
 def test_submit_valid_product_shows_success_message(form):
     """Tests that submitting a valid product URL and discount shows the success message."""
     form.text_input[0].set_value("https://example.com/product")
@@ -57,6 +60,7 @@ def test_submit_high_discount(form):
     assert "Now tracking this product at a £1999 target discount" in form.success[0].value
 
 
+# Form submission error
 def test_submit_empty_url_shows_error_message(form):
     """Tests that submitting an empty URL shows error message."""
     form.text_input[0].set_value("") # empty url
