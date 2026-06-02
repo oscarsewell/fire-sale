@@ -32,7 +32,9 @@ def _get_credentials() -> dict:
     First attempts to load from environment variables (set via .env or ECS env).
     Falls back to AWS Secrets Manager if environment variables are not found.
     """
-    load_dotenv()
+    # Resolve .env relative to this file so it works regardless of cwd
+    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(dotenv_path)
 
     host = os.getenv("DB_HOST")
     user = os.getenv("DB_USER")
