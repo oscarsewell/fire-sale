@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from bot_db import insert_discord_user, get_or_create_product, add_tracking, get_tracked_products, remove_tracking
+from bot_db import insert_discord_user, get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id
 
 load_dotenv()
 
@@ -35,9 +35,9 @@ def validate_product_url(product_url):
     return ALLOWED_DOMAINS.get(domain)
 
 
-def validate_target_discount(target_discount):
-    """Validates that the target discount is a positive integer between 1 and 100"""
-    return 0 <= target_discount <= 100
+def validate_target_price(target_price):
+    """Validates that the target price is a positive integer"""
+    return target_price > 0
 
 
 @client.event
@@ -59,6 +59,17 @@ async def track(
         product_url: str,
         target_price: int):
     """Responds to /track to set up tracking for a product"""
+    linked_user = get_user_by_discord_id(interaction.user.id)
+
+    if linked_user is None:
+        await interaction.response.send_message(
+            "Your Discord account is not linked to any account.\n\n"
+            "Sign up on the Hardware Hound website to start tracking products and receiving notifications!\n"
+            "https://hardwarehound.com/signup\n",
+            ephemeral=True
+        )
+        return
+
     website_name = validate_product_url(product_url)
 
     if website_name is None:
@@ -69,7 +80,7 @@ async def track(
         )
         return
 
-    if not validate_target_discount(target_price):
+    if not validate_target_price(target_price):
         await interaction.response.send_message(
             "Please enter a valid target price.",
             ephemeral=True
@@ -90,10 +101,7 @@ async def track(
 
     async def confirm_callback(button_interaction):
         try:
-            discord_user_id = button_interaction.user.id
-
-            user_id = insert_discord_user(
-                discord_user_id, username=button_interaction.user.name)
+            user_id = linked_user["id"]
 
             product_id = get_or_create_product(
                 product_url=product_url, product_name="Not set", site_name=website_name, currency="GBP",)
@@ -148,9 +156,12 @@ async def help_command(interaction: discord.Interaction):
     await interaction.response.send_message(
         "**Hardware Hound Bot Commands:**\n\n"
         "`/ping` - Check if the bot is online\n"
+        "`/status` - Check if your Discord account is linked\n"
+        "`/link` - Link your Discord account to your Hardware Hound account\n"
         "`/track` - Track a product by URL and target price\n"
         "`/list` - Show your tracked products\n"
         "`/untrack` - Stop tracking a product\n"
+        "`/sites` - List supported retail sites\n"
         "`/help` - Show this help message\n",
         ephemeral=True,
     )
@@ -218,5 +229,51 @@ async def untrack(
         await interaction.followup.send(
             f"Something went wrong trying to untrack that product: {e}", ephemeral=True
         )
+
+
+@tree.command(name="status", description="Check whether your Discord account is linked")
+async def status(interaction: discord.Interaction):
+    """Responds to /status to check if the user's Discord account is linked to an account"""
+    await interaction.response.defer(ephemeral=True)
+
+    user = get_user_by_discord_id(interaction.user.id)
+
+    if user:
+        await interaction.followup.send(
+            f"Your Discord account is linked to the following account:\n\n"
+            f"Username: {user['username']}\n"
+            f"Email: {user['email']}\n",
+            ephemeral=True
+        )
+    else:
+        await interaction.followup.send(
+            "Your Discord account is not linked to any account.\n\n"
+            "Sign up on the Hardware Hound website to start tracking products and receiving notifications!\n"
+            "https://hardwarehound.com/signup\n",
+            ephemeral=True
+        )
+
+
+@tree.command(name="sites", description="List supported retail sites")
+async def sites(interaction: discord.Interaction):
+    """Responds to /sites to list supported retail sites"""
+    await interaction.response.send_message(
+        "**Supported Retail Sites:**\n\n"
+        "Ebuyer\n"
+        "Overclockers\n"
+        "Scan\n",
+        ephemeral=True,
+    )
+
+
+@tree.command(name="link", description="Link your Discord account to your Hardware Hound account with a code")
+async def link(interaction: discord.Interaction, code: str):
+    """Responds to /link to link the user's Discord account to their Hardware Hound account using a code"""
+    await interaction.response.send_message(
+        "Log in to your Hardware Hound account to generate a linking code.\n\n"
+        "Enter the code here to link your account.",
+        ephemeral=True
+    )
+
 
 client.run(TOKEN)

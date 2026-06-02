@@ -11,7 +11,7 @@ def get_connection():
     return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 
-def insert_discord_user(discord_user_id username=None):
+def insert_discord_user(discord_user_id, username=None):
     """Creates or fetch a Discord user"""
     with get_connection() as conn:
         with conn.cursor() as cursor:
@@ -140,3 +140,26 @@ def remove_tracking(discord_user_id, product_id):
             deleted_row = cursor.fetchone()
 
     return deleted_row is not None
+
+
+def get_user_by_discord_id(discord_user_id):
+    """Fetch a user record by their Discord ID"""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, username, discord
+                FROM users
+                WHERE discord = %s
+                """,
+                (str(discord_user_id),),
+            )
+            row = cursor.fetchone()
+
+    if row:
+        return {
+            "id": row[0],
+            "username": row[1],
+            "discord": row[2],
+        }
+    return None
