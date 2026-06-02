@@ -1,7 +1,9 @@
 """Function for inserting cleaned data into the database."""
+import json
 import os
 from datetime import datetime, timezone, timedelta
 import logging
+import boto3
 import psycopg2
 from dotenv import load_dotenv
 
@@ -10,6 +12,58 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+secrets_client = boto3.client("secretsmanager")
+
+
+def get_db_credentials() -> dict:
+    """Retrieve database credentials from environment or AWS Secrets Manager.
+
+    First attempts to load from environment variables (set via .env or Lambda env).
+    Falls back to AWS Secrets Manager if environment variables are not found.
+    """
+    # Try to get credentials from environment variables first
+    host = os.getenv("DB_HOST")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    port = os.getenv("DB_PORT")
+    dbname = os.getenv("DB_NAME")
+
+    # If all env vars are present, use them
+    if all([host, user, password, port, dbname]):
+        logger.info("Using credentials from environment variables")
+        return {
+            "host": host,
+            "port": int(port),
+            "username": user,
+            "password": password,
+            "dbname": dbname,
+        }
+
+    # Otherwise, try to get from AWS Secrets Manager (Lambda environment)
+    try:
+        secret_arn = os.getenv("DB_SECRET_ARN")
+        if not secret_arn:
+            raise ValueError(
+                "DB_SECRET_ARN not set and environment variables incomplete. "
+                "Either set DB_HOST, DB_USER, DB_PASSWORD, DB_PORT, DB_NAME "
+                "or set DB_SECRET_ARN for AWS Secrets Manager."
+            )
+
+        logger.info("Using credentials from AWS Secrets Manager")
+        response = secrets_client.get_secret_value(SecretId=secret_arn)
+        credentials = json.loads(response["SecretString"])
+
+        return {
+            "host": credentials.get("host"),
+            "port": int(credentials.get("port", 5432)),
+            "username": credentials.get("username"),
+            "password": credentials.get("password"),
+            "dbname": credentials.get("dbname"),
+        }
+    except Exception as e:
+        logger.error("Failed to retrieve database credentials: %s", str(e))
+        raise
 
 
 def insert_product_into_db(
@@ -23,10 +77,7 @@ def insert_product_into_db(
         logger.error("product is not a dictionary: %r", product)
         raise TypeError("product must be a dictionary.")
 
-    required_keys = (
-        "product_name", "product_id", "original_price",
-        "current_price", "currency_code", "url", "website_name", "scraped_at"
-    )
+    required_keys = ("product_id", "current_price", "scraped_at")
     missing_keys = [key for key in required_keys if key not in product]
     if missing_keys:
         logger.error("product is missing required keys: %s", missing_keys)
@@ -37,13 +88,12 @@ def insert_product_into_db(
     try:
         with connection.cursor() as cursor:
             insert_query = """
-                INSERT INTO price_history (product_id, current_price, original_price, scraped_at)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO price_history (product_id, current_price, scraped_at)
+                VALUES (%s, %s, %s)
             """
             cursor.execute(insert_query, (
                 product["product_id"],
                 product["current_price"],
-                product["original_price"],
                 product["scraped_at"]
             ))
             connection.commit()
@@ -54,34 +104,37 @@ def insert_product_into_db(
         raise
 
 
+def mark_products_defunct(
+        urls: list,
+        connection: psycopg2.extensions.connection
+) -> None:
+    """Updates the products table to mark pages as no longer existing."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE products SET page_exists = FALSE WHERE product_url = ANY(%s)",
+                (urls,)
+            )
+            connection.commit()
+            logger.info("Marked %d products as defunct.", len(urls))
+    except psycopg2.DatabaseError as e:
+        logger.error("Database error marking products defunct: %s", e)
+        connection.rollback()
+        raise
+
+
 if __name__ == "__main__":
-    # Load environment variables from .env file
-    load_dotenv()
+    load_dotenv()  # Load .env file if it exists
 
-    # Debug: Check if env vars are loaded
-    db_name = os.getenv("DB_NAME")
-    db_user = os.getenv("DB_USER")
-    db_password = os.getenv("DB_PASSWORD")
-    db_host = os.getenv("DB_HOST")
-    db_port = os.getenv("DB_PORT")
-
-    logger.info("DB_NAME: %s", db_name)
-    logger.info("DB_USER: %s", db_user)
-    logger.info("DB_HOST: %s", db_host)
-    logger.info("DB_PORT: %s", db_port)
-
-    if not all([db_name, db_user, db_host, db_port]):
-        logger.error(
-            "Missing required environment variables. Please check your .env file.")
-        raise ValueError("Missing required database connection parameters")
+    db_credentials = get_db_credentials()
 
     # Example usage
     db_connection = psycopg2.connect(
-        dbname=db_name,
-        user=db_user,
-        password=db_password,
-        host=db_host,
-        port=db_port
+        dbname=db_credentials["dbname"],
+        user=db_credentials["username"],
+        password=db_credentials["password"],
+        host=db_credentials["host"],
+        port=db_credentials["port"]
     )
     product_test = {
         "product_id": "1",
@@ -89,7 +142,8 @@ if __name__ == "__main__":
         "current_price": 59999,
         "original_price": 69999,
         "currency_code": "GBP",
-        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070-12g-ventus-2x-oc-705988#colcode=70598803",
+        "url": "https://www.ebuyer.com/msi-msi-geforce-rtx-5070"
+        "-12g-ventus-2x-oc-705988#colcode=70598803",
         "website_name": "Ebuyer",
         "scraped_at": datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone(timedelta(0)))
     }

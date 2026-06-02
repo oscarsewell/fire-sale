@@ -3,19 +3,6 @@ It includes functions to clean product names, extract currency symbols,
 convert price strings to floats, calculate discount percentages, 
 and convert timestamp strings to datetime objects."""
 
-# dictionary format:
-# {
-# "product_id": 67
-# "product_name": "",
-# "original_price": "$999.00"
-# "current_price": "$899.00",
-# "currency_code": "USD"
-# "url": "",
-# "website_name": "EBuyer",
-# "scraped_at": "[timestamp]"
-# }
-#
-
 import logging
 from datetime import datetime
 import re
@@ -118,9 +105,9 @@ def clean_currency(currency: str) -> str:
 
     try:
         iso4217.Currency(cleaned_currency)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
         logger.error("Invalid currency code: '%s'", cleaned_currency)
-        raise ValueError(f"Invalid currency code: {cleaned_currency}")
+        raise ValueError(f"Invalid currency code: {cleaned_currency}") from e
 
     logger.info("Currency cleaned: '%s'", cleaned_currency)
     return cleaned_currency
@@ -165,33 +152,71 @@ def valid_url(product_url: str) -> bool:
     return is_valid
 
 
-def clean_product_data(product: dict) -> dict:
-    """Cleans and normalizes the product data."""
-    logger.info("Starting full product data clean.")
+def check_page_exists_bool(page_exists) -> bool:
+    """Checks if the page_exists value is a boolean."""
+    logger.debug("Checking page_exists value: %r", page_exists)
 
+    if not isinstance(page_exists, bool):
+        logger.error("page_exists is not a boolean: %r", page_exists)
+        raise TypeError("page_exists must be a boolean.")
+
+    logger.info("page_exists is a valid boolean: %r", page_exists)
+    return page_exists
+
+
+CRITICAL_KEYS = (
+    "product_id",
+    "url",
+    "current_price",
+    "currency_code",
+    "scraped_at",
+    "page_exists"
+)
+
+
+def clean_product_data(product: dict) -> dict:
+    """Cleans product data for Lambda insertion.
+
+    Returns None if any critical fields are missing (product is skipped).
+    Returns a minimal dict with page_exists=False if the page no longer exists.
+    Returns the cleaned product dict if page_exists=True.
+    """
     if not isinstance(product, dict):
         logger.error("product is not a dictionary: %r", product)
         raise TypeError("product must be a dictionary.")
 
-    required_keys = (
-        "product_name", "original_price", "current_price",
-        "currency", "url", "website_name", "scraped_at"
-    )
-    missing_keys = [key for key in required_keys if key not in product]
+    # Skip products with any missing critical fields
+    missing_keys = [k for k in CRITICAL_KEYS if product.get(k) is None]
     if missing_keys:
-        logger.error("product is missing required keys: %s", missing_keys)
-        raise ValueError(
-            f"product is missing required keys: {', '.join(missing_keys)}"
-        )
+        logger.warning(
+            "Skipping product - missing critical fields: %s", missing_keys)
+        return None
 
-    product["product_name"] = clean_product_name(
-        product.get("product_name", ""))
-    product["original_price"] = parse_price(product["original_price"])
-    product["current_price"] = parse_price(product["current_price"])
-    product["currency"] = clean_currency(product["currency"])
-    product["scraped_at"] = convert_to_datetime(product["scraped_at"])
-    logger.info("Product data clean complete.")
-    return product
+    try:
+        product["page_exists"] = check_page_exists_bool(product["page_exists"])
+
+        if not product["page_exists"]:
+            logger.info("Product page defunct: %s", product.get("url"))
+            return {
+                "product_id": product["product_id"],
+                "url": product["url"],
+                "page_exists": False
+            }
+
+        # page_exists = True: validate and clean fields needed for insertion
+        if not valid_url(product["url"]):
+            logger.warning("Invalid URL, skipping product: %s", product["url"])
+            return None
+        product["url"] = product["url"].strip()
+        product["current_price"] = parse_price(product["current_price"])
+        product["currency_code"] = clean_currency(product["currency_code"])
+        product["scraped_at"] = convert_to_datetime(product["scraped_at"])
+
+        logger.info("Product data cleaned successfully.")
+        return product
+    except Exception as e:
+        logger.error("Error cleaning product data: %s", str(e))
+        raise
 
 
 if __name__ == "__main__":
@@ -200,9 +225,10 @@ if __name__ == "__main__":
         "product_name": "  Apple iPhone 13 Pro Max  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",
-        "currency": "USD",
+        "currency_code": "USD",
         "url": "https://www.example.com/product/iphone-13-pro-max",
         "website_name": "ExampleStore",
-        "scraped_at": "2024-06-01T12:00:00Z"
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": True
     }
     print(clean_product_data(example_product))

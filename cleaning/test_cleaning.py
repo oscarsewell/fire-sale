@@ -7,6 +7,7 @@ from cleaning import (
     clean_currency,
     convert_to_datetime,
     valid_url,
+    check_page_exists_bool,
     clean_product_data
 )
 
@@ -191,14 +192,14 @@ def test_clean_product_data():
         "product_name": "  Apple iPhone 13  ",
         "original_price": "$1099.00",
         "current_price": "$999.00",
-        "currency": "usd",
+        "currency_code": "usd",
         "url": "https://www.example.com/product/123",
         "website_name": "ExampleStore",
-        "scraped_at": "2024-06-01T12:00:00Z"
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "product_id": "123",
+        "page_exists": True
     }
     result = clean_product_data(product)
-    assert result["product_name"] == "Apple iPhone 13"
-    assert result["original_price"] == 109900
     assert result["current_price"] == 99900
     assert result["currency_code"] == "USD"
     assert result["scraped_at"] == datetime(
@@ -213,11 +214,45 @@ def test_clean_product_data_non_dict_raises_error():
         clean_product_data(None)
 
 
-def test_clean_product_data_missing_keys_raises_error():
-    """Tests that missing required keys raise a ValueError."""
+def test_clean_product_data_missing_critical_keys_returns_none():
+    """Tests that products with missing critical keys return None (are skipped)."""
     incomplete_product = {
         "product_name": "iPhone",
         "original_price": "$1099.00",
     }
-    with pytest.raises(ValueError):
-        clean_product_data(incomplete_product)
+    result = clean_product_data(incomplete_product)
+    assert result is None
+
+
+def test_clean_product_data_page_not_exists():
+    """Tests that a defunct product returns a minimal dict with page_exists=False."""
+    product = {
+        "product_id": "123",
+        "url": "https://www.example.com/product/123",
+        "current_price": "$999.00",
+        "currency_code": "USD",
+        "scraped_at": "2024-06-01T12:00:00Z",
+        "page_exists": False,
+    }
+    result = clean_product_data(product)
+    assert result == {
+        "product_id": "123",
+        "url": "https://www.example.com/product/123",
+        "page_exists": False,
+    }
+
+
+def test_check_page_exists_bool_valid():
+    """Tests that check_page_exists_bool returns True/False correctly."""
+    assert check_page_exists_bool(True) is True
+    assert check_page_exists_bool(False) is False
+
+
+def test_check_page_exists_bool_non_bool_raises_error():
+    """Tests that a non-boolean value raises a TypeError."""
+    with pytest.raises(TypeError):
+        check_page_exists_bool(1)
+    with pytest.raises(TypeError):
+        check_page_exists_bool("true")
+    with pytest.raises(TypeError):
+        check_page_exists_bool(None)
