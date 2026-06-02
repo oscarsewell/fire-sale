@@ -1,12 +1,5 @@
-"""AWS SES email sender for Hardware Hound.
-
-SES integration is planned – this module currently prints the verification
-link to stdout so development can proceed without a live email service.
-
-To enable SES when ready:
-  1. Set AWS_REGION and SES_FROM_EMAIL environment variables.
-  2. Uncomment the boto3 block below and remove the stub section.
-"""
+# pylint: disable=broad-exception-caught
+"""AWS SES email sender for Hardware Hound."""
 import logging
 import os
 

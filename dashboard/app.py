@@ -1,3 +1,4 @@
+# pylint: disable=broad-exception-caught
 """Hardware Hound – Streamlit dashboard application."""
 import logging
 import os
@@ -48,8 +49,8 @@ if "verify_token" in st.query_params and "token_processed" not in st.session_sta
             st.session_state["flash_error"] = (
                 "Verification link is invalid or has expired. Please register again."
             )
-    except Exception as exc:
-        logger.error("Unexpected error during email verification: %s", exc)
+    except Exception as e:
+        logger.error("Unexpected error during email verification: %s", e)
         st.session_state["flash_error"] = (
             "Could not process your verification link. Please try again later."
         )
@@ -73,6 +74,7 @@ def _show_flash() -> None:
 
 # ── Page: Login ───────────────────────────────────────────────────────────────
 def render_login() -> None:
+    """Render the login page."""
     st.title("🐾 Hardware Hound")
     st.subheader("Log in to your account")
     _show_flash()
@@ -95,11 +97,11 @@ def render_login() -> None:
                         "User logged in via UI: user_id=%s", user["id"])
                     st.session_state.user = user
                     _go("home")
-            except ValueError as exc:
-                logger.warning("Login blocked for %s: %s", email, exc)
-                st.warning(str(exc))
-            except Exception as exc:
-                logger.error("Unhandled error on login for %s: %s", email, exc)
+            except ValueError as e:
+                logger.warning("Login blocked for %s: %s", email, e)
+                st.warning(str(e))
+            except Exception as e:
+                logger.error("Unhandled error on login for %s: %s", email, e)
                 st.error(
                     "Unable to connect to the database. Please try again later.")
 
@@ -110,6 +112,7 @@ def render_login() -> None:
 
 # ── Page: Register ────────────────────────────────────────────────────────────
 def render_register() -> None:
+    """Render the registration page."""
     st.title("🐾 Hardware Hound")
     st.subheader("Create a new account")
     _show_flash()
@@ -155,12 +158,12 @@ def render_register() -> None:
                     "Please verify your email before logging in."
                 )
                 _go("login")
-            except ValueError as exc:
-                logger.warning("Registration rejected for %s: %s", email, exc)
-                st.error(str(exc))
-            except Exception as exc:
+            except ValueError as e:
+                logger.warning("Registration rejected for %s: %s", email, e)
+                st.error(str(e))
+            except Exception as e:
                 logger.error(
-                    "Unhandled error during registration for %s: %s", email, exc)
+                    "Unhandled error during registration for %s: %s", email, e)
                 st.error("Could not create your account. Please try again later.")
 
     st.divider()
@@ -168,8 +171,9 @@ def render_register() -> None:
         _go("login")
 
 
-# ── Page: Home (authenticated) ────────────────────────────────────────────────
+# ── Page: Home (authenticated) (placeholder) ────────────────────────────────────────────────
 def render_home() -> None:
+    """Render the home page for authenticated users."""
     user = st.session_state.user
 
     with st.sidebar:

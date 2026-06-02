@@ -46,7 +46,10 @@ def register_user(username: str, email: str, plain_password: str) -> dict:
                 )
                 if cur.fetchone():
                     logger.warning(
-                        "Registration failed – username or email already in use: %s / %s", username, email)
+                        "Registration failed – username "
+                        "or email already in use: %s / %s", 
+                        username, email
+                        )
                     raise ValueError("Username or email is already in use.")
 
                 cur.execute(
@@ -70,7 +73,9 @@ def register_user(username: str, email: str, plain_password: str) -> dict:
                     (user_id, token, expires_at),
                 )
                 logger.debug(
-                    "Inserted verification token for user_id=%s, expires_at=%s", user_id, expires_at)
+                    "Inserted verification token for user_id=%s, expires_at=%s", 
+                    user_id, expires_at
+                    )
     except ValueError:
         raise
     except Exception as exc:
@@ -155,12 +160,16 @@ def verify_email_token(token: str) -> bool:
 
                 if row["used_at"] is not None:
                     logger.warning(
-                        "Verification failed – token already used (user_id=%s, used_at=%s)", row["user_id"], row["used_at"])
+                        "Verification failed – token already used (user_id=%s, used_at=%s)", 
+                        row["user_id"], row["used_at"]
+                        )
                     return False
 
                 if row["expires_at"] < now:
                     logger.warning(
-                        "Verification failed – token expired (user_id=%s, expired_at=%s)", row["user_id"], row["expires_at"])
+                        "Verification failed – token expired (user_id=%s, expired_at=%s)", 
+                        row["user_id"], row["expires_at"]
+                        )
                     return False
 
                 cur.execute(
