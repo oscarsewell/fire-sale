@@ -8,7 +8,7 @@ data "aws_ecs_cluster" "main" {
 # ── Security Group for ECS Tasks ─────────────────────────────────────────────
 
 resource "aws_security_group" "ecs" {
-	name        = "${var.project_name}-${var.environment}-ecs"
+	name        = "${var.cohort}-${var.project_name}-${var.environment}-ecs"
 	description = "Security group for ECS Fargate tasks (dashboard and Discord bot)."
 	vpc_id      = data.aws_vpc.main.id
 }
@@ -34,12 +34,12 @@ resource "aws_vpc_security_group_ingress_rule" "ecs_dashboard_streamlit" {
 # ── CloudWatch Log Groups for ECS Tasks ───────────────────────────────────────
 
 resource "aws_cloudwatch_log_group" "ecs_dashboard" {
-	name              = "/ecs/${var.project_name}-${var.environment}-dashboard"
+	name              = "/ecs/${var.cohort}-${var.project_name}-${var.environment}-dashboard"
 	retention_in_days = 14
 }
 
 resource "aws_cloudwatch_log_group" "ecs_discord_bot" {
-	name              = "/ecs/${var.project_name}-${var.environment}-discord-bot"
+	name              = "/ecs/${var.cohort}-${var.project_name}-${var.environment}-discord-bot"
 	retention_in_days = 14
 }
 
@@ -61,7 +61,7 @@ data "aws_iam_policy_document" "ecs_tasks_assume_role" {
 # ECS Task Execution Role (required for ECS agent to pull images and logs)
 
 resource "aws_iam_role" "ecs_task_execution" {
-	name               = "${var.project_name}-${var.environment}-ecs-task-execution"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-ecs-task-execution"
 	assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 }
 
@@ -73,7 +73,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_managed" {
 # Dashboard Task Role
 
 resource "aws_iam_role" "ecs_dashboard_task" {
-	name               = "${var.project_name}-${var.environment}-ecs-dashboard-task"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-ecs-dashboard-task"
 	assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 }
 
@@ -115,7 +115,7 @@ data "aws_iam_policy_document" "ecs_dashboard_task" {
 }
 
 resource "aws_iam_policy" "ecs_dashboard_task" {
-	name   = "${var.project_name}-${var.environment}-ecs-dashboard-task"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-ecs-dashboard-task"
 	policy = data.aws_iam_policy_document.ecs_dashboard_task.json
 }
 
@@ -127,7 +127,7 @@ resource "aws_iam_role_policy_attachment" "ecs_dashboard_task" {
 # Discord Bot Task Role
 
 resource "aws_iam_role" "ecs_discord_bot_task" {
-	name               = "${var.project_name}-${var.environment}-ecs-discord-bot-task"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-ecs-discord-bot-task"
 	assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 }
 
@@ -183,7 +183,7 @@ data "aws_iam_policy_document" "ecs_discord_bot_task" {
 }
 
 resource "aws_iam_policy" "ecs_discord_bot_task" {
-	name   = "${var.project_name}-${var.environment}-ecs-discord-bot-task"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-ecs-discord-bot-task"
 	policy = data.aws_iam_policy_document.ecs_discord_bot_task.json
 }
 
@@ -195,7 +195,7 @@ resource "aws_iam_role_policy_attachment" "ecs_discord_bot_task" {
 # ── ECS Task Definitions ──────────────────────────────────────────────────────
 
 resource "aws_ecs_task_definition" "dashboard" {
-	family                   = "${var.project_name}-${var.environment}-dashboard"
+	family                   = "${var.cohort}-${var.project_name}-${var.environment}-dashboard"
 	network_mode             = "awsvpc"
 	requires_compatibilities = ["FARGATE"]
 	cpu                      = 512
@@ -229,7 +229,7 @@ resource "aws_ecs_task_definition" "dashboard" {
 }
 
 resource "aws_ecs_task_definition" "discord_bot" {
-	family                   = "${var.project_name}-${var.environment}-discord-bot"
+	family                   = "${var.cohort}-${var.project_name}-${var.environment}-discord-bot"
 	network_mode             = "awsvpc"
 	requires_compatibilities = ["FARGATE"]
 	cpu                      = 256
@@ -260,7 +260,7 @@ resource "aws_ecs_task_definition" "discord_bot" {
 # ── ECS Services ──────────────────────────────────────────────────────────────
 
 resource "aws_ecs_service" "dashboard" {
-	name            = "${var.project_name}-${var.environment}-dashboard"
+	name            = "${var.cohort}-${var.project_name}-${var.environment}-dashboard"
 	cluster         = data.aws_ecs_cluster.main.arn
 	task_definition = aws_ecs_task_definition.dashboard.arn
 	launch_type     = "FARGATE"
@@ -279,7 +279,7 @@ resource "aws_ecs_service" "dashboard" {
 }
 
 resource "aws_ecs_service" "discord_bot" {
-	name            = "${var.project_name}-${var.environment}-discord-bot"
+	name            = "${var.cohort}-${var.project_name}-${var.environment}-discord-bot"
 	cluster         = data.aws_ecs_cluster.main.arn
 	task_definition = aws_ecs_task_definition.discord_bot.arn
 	launch_type     = "FARGATE"

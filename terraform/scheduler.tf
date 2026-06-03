@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "scheduler_assume_role" {
 }
 
 resource "aws_iam_role" "scheduler_start_state_machine" {
-	name               = "${var.project_name}-${var.environment}-scheduler-start-state-machine"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-scheduler-start-state-machine"
 	assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
 }
 
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "scheduler_start_state_machine" {
 }
 
 resource "aws_iam_policy" "scheduler_start_state_machine" {
-	name   = "${var.project_name}-${var.environment}-scheduler-start-state-machine"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-scheduler-start-state-machine"
 	policy = data.aws_iam_policy_document.scheduler_start_state_machine.json
 }
 
@@ -40,7 +40,7 @@ resource "aws_iam_role_policy_attachment" "scheduler_start_state_machine" {
 # ── EventBridge Schedule ──────────────────────────────────────────────────────
 
 resource "aws_scheduler_schedule" "main" {
-	name       = "${var.project_name}-${var.environment}"
+	name       = "${var.cohort}-${var.project_name}-${var.environment}-scheduler"
 	group_name = "default"
 
 	flexible_time_window {

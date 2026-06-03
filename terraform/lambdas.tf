@@ -14,7 +14,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 # Tracked Product Checker Lambda
 
 resource "aws_iam_role" "lambda_tracked_product_checker" {
-	name               = "${var.project_name}-${var.environment}-lambda-tracked-product-checker"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-lambda-tracked-product-checker"
 	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "lambda_tracked_product_checker" {
 }
 
 resource "aws_iam_policy" "lambda_tracked_product_checker" {
-	name   = "${var.project_name}-${var.environment}-lambda-tracked-product-checker"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-lambda-tracked-product-checker"
 	policy = data.aws_iam_policy_document.lambda_tracked_product_checker.json
 }
 
@@ -88,13 +88,13 @@ resource "aws_iam_role_policy_attachment" "lambda_tracked_product_checker" {
 
 resource "aws_cloudwatch_log_group" "lambda_scraper" {
 	for_each          = toset(var.scraper_names)
-	name              = "/aws/lambda/${var.project_name}-${var.environment}-scraper-${each.key}"
+	name              = "/aws/lambda/${var.cohort}-${var.project_name}-${var.environment}-scraper-${each.key}"
 	retention_in_days = 14
 }
 
 resource "aws_iam_role" "lambda_scraper" {
 	for_each           = toset(var.scraper_names)
-	name               = "${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
 	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -119,7 +119,7 @@ data "aws_iam_policy_document" "lambda_scraper" {
 
 resource "aws_iam_policy" "lambda_scraper" {
 	for_each = toset(var.scraper_names)
-	name     = "${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
+	name     = "${var.cohort}-${var.project_name}-${var.environment}-lambda-scraper-${each.key}"
 	policy   = data.aws_iam_policy_document.lambda_scraper[each.key].json
 }
 
@@ -132,7 +132,7 @@ resource "aws_iam_role_policy_attachment" "lambda_scraper" {
 # Cleaning Lambda
 
 resource "aws_iam_role" "lambda_cleaning" {
-	name               = "${var.project_name}-${var.environment}-lambda-cleaning"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-lambda-cleaning"
 	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -189,7 +189,7 @@ data "aws_iam_policy_document" "lambda_cleaning" {
 }
 
 resource "aws_iam_policy" "lambda_cleaning" {
-	name   = "${var.project_name}-${var.environment}-lambda-cleaning"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-lambda-cleaning"
 	policy = data.aws_iam_policy_document.lambda_cleaning.json
 }
 
@@ -201,7 +201,7 @@ resource "aws_iam_role_policy_attachment" "lambda_cleaning" {
 # Determine Notification Lambda
 
 resource "aws_iam_role" "lambda_determine_notification" {
-	name               = "${var.project_name}-${var.environment}-lambda-determine-notification"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-lambda-determine-notification"
 	assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -279,7 +279,7 @@ data "aws_iam_policy_document" "lambda_determine_notification" {
 }
 
 resource "aws_iam_policy" "lambda_determine_notification" {
-	name   = "${var.project_name}-${var.environment}-lambda-determine-notification"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-lambda-determine-notification"
 	policy = data.aws_iam_policy_document.lambda_determine_notification.json
 }
 
@@ -291,17 +291,17 @@ resource "aws_iam_role_policy_attachment" "lambda_determine_notification" {
 # ── CloudWatch Log Groups ─────────────────────────────────────────────────────
 
 resource "aws_cloudwatch_log_group" "lambda_tracked_product_checker" {
-	name              = "/aws/lambda/${var.project_name}-${var.environment}-tracked-product-checker"
+	name              = "/aws/lambda/${var.cohort}-${var.project_name}-${var.environment}-tracked-product-checker"
 	retention_in_days = 14
 }
 
 resource "aws_cloudwatch_log_group" "lambda_cleaning" {
-	name              = "/aws/lambda/${var.project_name}-${var.environment}-cleaning"
+	name              = "/aws/lambda/${var.cohort}-${var.project_name}-${var.environment}-cleaning"
 	retention_in_days = 14
 }
 
 resource "aws_cloudwatch_log_group" "lambda_determine_notification" {
-	name              = "/aws/lambda/${var.project_name}-${var.environment}-determine-notification"
+	name              = "/aws/lambda/${var.cohort}-${var.project_name}-${var.environment}-determine-notification"
 	retention_in_days = 14
 }
 
@@ -313,7 +313,7 @@ resource "aws_cloudwatch_log_group" "lambda_determine_notification" {
 resource "aws_lambda_function" "scraper" {
 	for_each = toset(var.scraper_names)
 
-	function_name = "${var.project_name}-${var.environment}-scraper-${each.key}"
+	function_name = "${var.cohort}-${var.project_name}-${var.environment}-scraper-${each.key}"
 	role          = aws_iam_role.lambda_scraper[each.key].arn
 	package_type  = "Image"
 	image_uri     = "${aws_ecr_repository.lambda["scraper-${each.key}"].repository_url}:${var.image_tag}"
@@ -334,7 +334,7 @@ resource "aws_lambda_function" "scraper" {
 }
 
 resource "aws_lambda_function" "tracked_product_checker" {
-	function_name = "${var.project_name}-${var.environment}-tracked-product-checker"
+	function_name = "${var.cohort}-${var.project_name}-${var.environment}-tracked-product-checker"
 	role          = aws_iam_role.lambda_tracked_product_checker.arn
 	package_type  = "Image"
 	image_uri     = "${aws_ecr_repository.lambda["tracked-product-checker"].repository_url}:${var.image_tag}"
@@ -355,7 +355,7 @@ resource "aws_lambda_function" "tracked_product_checker" {
 }
 
 resource "aws_lambda_function" "cleaning" {
-	function_name = "${var.project_name}-${var.environment}-cleaning"
+	function_name = "${var.cohort}-${var.project_name}-${var.environment}-lambda-cleaning"
 	role          = aws_iam_role.lambda_cleaning.arn
 	package_type  = "Image"
 	image_uri     = "${aws_ecr_repository.lambda["cleaning"].repository_url}:${var.image_tag}"
@@ -375,7 +375,7 @@ resource "aws_lambda_function" "cleaning" {
 }
 
 resource "aws_lambda_function" "determine_notification" {
-	function_name = "${var.project_name}-${var.environment}-determine-notification"
+	function_name = "${var.cohort}-${var.project_name}-${var.environment}-lambda-determine-notification"
 	role          = aws_iam_role.lambda_determine_notification.arn
 	package_type  = "Image"
 	image_uri     = "${aws_ecr_repository.lambda["determine-notification"].repository_url}:${var.image_tag}"

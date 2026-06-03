@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "step_functions_assume_role" {
 }
 
 resource "aws_iam_role" "step_functions_execution" {
-	name               = "${var.project_name}-${var.environment}-step-functions-execution"
+	name               = "${var.cohort}-${var.project_name}-${var.environment}-step-functions-execution"
 	assume_role_policy = data.aws_iam_policy_document.step_functions_assume_role.json
 }
 
@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "step_functions_invoke_lambdas" {
 }
 
 resource "aws_iam_policy" "step_functions_invoke_lambdas" {
-	name   = "${var.project_name}-${var.environment}-step-functions-invoke-lambdas"
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-step-functions-invoke-lambdas"
 	policy = data.aws_iam_policy_document.step_functions_invoke_lambdas.json
 }
 
@@ -50,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "step_functions_invoke_lambdas" {
 # new retailer only requires updating that variable.
 
 resource "aws_sfn_state_machine" "main" {
-	name     = "${var.project_name}-${var.environment}"
+	name     = "${var.cohort}-${var.project_name}-${var.environment}-step-functions"
 	role_arn = aws_iam_role.step_functions_execution.arn
 	type     = "STANDARD"
 

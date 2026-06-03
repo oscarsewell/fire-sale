@@ -6,7 +6,6 @@ locals {
 	fixed_lambda_ecr_names = toset([
 		"tracked-product-checker",
 		"cleaning",
-		"determine-notification",
 	])
 
 	all_lambda_ecr_names = setunion(local.fixed_lambda_ecr_names, local.scraper_ecr_names)
@@ -17,7 +16,7 @@ locals {
 resource "aws_ecr_repository" "lambda" {
 	for_each = local.all_lambda_ecr_names
 
-	name                 = "${var.project_name}-${var.environment}-lambda-${each.key}"
+	name                 = "${var.cohort}-${var.project_name}-${var.environment}-lambda-${each.key}"
 	image_tag_mutability = "MUTABLE"
 
 	image_scanning_configuration {
@@ -69,7 +68,7 @@ resource "aws_ecr_repository_policy" "lambda" {
 # ── Dashboard ECR Repository ──────────────────────────────────────────────────
 
 resource "aws_ecr_repository" "dashboard" {
-	name                 = "${var.project_name}-${var.environment}-dashboard"
+	name                 = "${var.cohort}-${var.project_name}-${var.environment}-dashboard"
 	image_tag_mutability = "MUTABLE"
 
 	image_scanning_configuration {
@@ -97,7 +96,7 @@ resource "aws_ecr_lifecycle_policy" "dashboard" {
 # ── Discord Bot ECR Repository ────────────────────────────────────────────────
 
 resource "aws_ecr_repository" "discord_bot" {
-	name                 = "${var.project_name}-${var.environment}-discord-bot"
+	name                 = "${var.cohort}-${var.project_name}-${var.environment}-discord-bot"
 	image_tag_mutability = "MUTABLE"
 
 	image_scanning_configuration {
