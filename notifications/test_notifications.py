@@ -87,7 +87,8 @@ def test_create_notification_message_uses_correct_currency():
 
     message = create_notification_message(notification)
 
-    assert "" in message
+    assert "$50" in message
+    assert "Target Price: $60" in message
 
 
 # Tests for multi-channel notification routing
