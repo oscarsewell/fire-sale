@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS discord_link_codes;
 DROP TABLE IF EXISTS price_history;
 DROP TABLE IF EXISTS tracked_products;
 DROP TABLE IF EXISTS passwords;
+DROP TABLE IF EXISTS email_verification_tokens;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS site_names;
@@ -21,6 +22,17 @@ CREATE TABLE passwords (
   salt VARCHAR(255) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE email_verification_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token);
 
 CREATE TABLE site_names (
   id SERIAL PRIMARY KEY,

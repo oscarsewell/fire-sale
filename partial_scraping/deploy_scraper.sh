@@ -9,7 +9,7 @@ fi
 
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${account_number}.dkr.ecr.eu-west-2.amazonaws.com
 
-docker build -t fire-sale-prod-lambda-scraper-${website_name} --provenance=false --platform="linux/amd64" .
+docker buildx build -t fire-sale-prod-lambda-scraper-${website_name}:latest --provenance=false --platform="linux/amd64" .
 
 docker tag fire-sale-prod-lambda-scraper-${website_name}:latest ${account_number}.dkr.ecr.eu-west-2.amazonaws.com/fire-sale-prod-lambda-scraper-${website_name}:latest
 
