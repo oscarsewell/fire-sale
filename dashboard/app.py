@@ -7,6 +7,9 @@ import streamlit as st
 
 from auth import login_user, register_user, verify_email_token
 from ses_email import send_verification_email
+from form import form_page
+from tracked_products import render_tracked_products
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -176,17 +179,6 @@ def render_home() -> None:
     """Render the home page for authenticated users."""
     user = st.session_state.user
 
-    with st.sidebar:
-        st.markdown(f"**{user['username']}**")
-        st.caption(user["email"])
-        st.divider()
-        if st.button("Log out", use_container_width=True):
-            logger.info("User logged out: user_id=%s", user["id"])
-            st.session_state.user = None
-            st.session_state.page = "login"
-            st.session_state.pop("token_processed", None)
-            st.rerun()
-
     st.title("🐾 Hardware Hound")
     st.write(f"Welcome back, **{user['username']}**!")
     st.divider()
@@ -202,9 +194,41 @@ def render_home() -> None:
     st.info("You are not tracking any products yet. Product tracking coming soon.")
 
 
+# ── Sidebar ────────────────────────────────────────────────────────────────────
+def render_sidebar() -> None:
+    """Render the sidebar with navigation options for all authenticated pages."""
+    user = st.session_state.user
+
+    with st.sidebar:
+        st.markdown(f"**{user['username']}**")
+        st.caption(user["email"])
+        st.divider()
+
+        if st.button("Home", use_container_width=True):
+            _go("home")
+        if st.button("Add Product", use_container_width=True):
+            _go("add_product")
+        if st.button("Tracked Products", use_container_width=True):
+            _go("tracked_products")
+
+        st.divider()
+        if st.button("Log out", use_container_width=True):
+            logger.info("User logged out: user_id=%s", user["id"])
+            st.session_state.user = None
+            st.session_state.page = "login"
+            st.session_state.pop("token_processed", None)
+            st.rerun()
+    
+
 # ── Router ────────────────────────────────────────────────────────────────────
 if st.session_state.user:
-    render_home()
+    render_sidebar()
+    if st.session_state.page == "add_product":
+        form_page()
+    elif st.session_state.page == "tracked_products":
+        render_tracked_products()
+    else:
+        render_home()
 elif st.session_state.page == "register":
     render_register()
 else:
