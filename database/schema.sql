@@ -27,8 +27,8 @@ CREATE TABLE email_verification_tokens (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
   token VARCHAR(255) NOT NULL UNIQUE,
-  expires_at TIMESTAMP NOT NULL,
-  used_at TIMESTAMP,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -66,7 +66,7 @@ CREATE TABLE price_history (
   id SERIAL PRIMARY KEY,
   product_id INT NOT NULL,
   current_price INT NOT NULL,
-  scraped_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  scraped_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
@@ -74,8 +74,8 @@ CREATE TABLE discord_link_codes (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL,
   code VARCHAR(255) NOT NULL UNIQUE,
-  expires_at TIMESTAMP NOT NULL,
-  used_at TIMESTAMP,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
