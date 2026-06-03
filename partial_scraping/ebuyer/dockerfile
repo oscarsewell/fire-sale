@@ -12,6 +12,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ebuyer_scraper.py .
+COPY ebuyer_scraper.py lambda_handler.py ./
 
-CMD ["ebuyer_scraper.handler"]
+CMD ["lambda_handler.lambda_handler"]

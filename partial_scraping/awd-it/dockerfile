@@ -12,6 +12,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY awd_it_scraper.py .
+COPY awd_it_scraper.py lambda_handler.py ./
 
-CMD ["awd_it_scraper.handler"]
+CMD ["lambda_handler.lambda_handler"]

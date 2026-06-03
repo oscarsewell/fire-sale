@@ -12,6 +12,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY overclockers_scraper.py .
+COPY overclockers_scraper.py lambda_handler.py ./
 
-CMD ["overclockers_scraper.handler"]
+CMD ["lambda_handler.lambda_handler"]
