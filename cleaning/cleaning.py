@@ -176,7 +176,6 @@ CRITICAL_KEYS = (
 
 def clean_product_data(product: dict) -> dict:
     """Cleans product data for Lambda insertion.
-
     Returns None if any critical fields are missing (product is skipped).
     Returns a minimal dict with page_exists=False if the page no longer exists.
     Returns the cleaned product dict if page_exists=True.
