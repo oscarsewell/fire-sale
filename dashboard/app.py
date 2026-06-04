@@ -10,6 +10,10 @@ from ses_email import send_verification_email
 from form import form_page
 from database import get_tracked_products
 from tracked_products import render_tracked_products
+from style_components import (
+    add_image,
+    render_header
+)
 
 
 logging.basicConfig(
