@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="Hardware Hound",
-    page_icon=add_image("hardware_hound_logo_cropped.png", width=150),
+    page_icon="🐾",
     layout="centered"
 )
 
