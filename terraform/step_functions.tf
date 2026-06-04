@@ -129,7 +129,7 @@ resource "aws_sfn_state_machine" "main" {
 							Parameters = {
 								Source = "noreply@fire-sale.example.com"
 								Destination = {
-									"ToAddresses.$" = "[$.recipient]"
+										"ToAddresses.$" = "States.Array($.recipient)"
 								}
 								Message = {
 									Subject = {
