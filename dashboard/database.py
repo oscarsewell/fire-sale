@@ -176,3 +176,5 @@ def remove_tracked_product(user_id: int, product_id: int) -> None:
                 "DELETE FROM tracked_products WHERE user_id = %s AND product_id = %s",
                 (user_id, product_id),
             )
+            if cur.rowcount == 0:
+                raise ValueError("Tracked product not found for this user.")
