@@ -1,8 +1,8 @@
 """Database interactions for the Discord bot"""
 import os
-import psycopg2
-import datetime
 from datetime import datetime, timezone
+
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
