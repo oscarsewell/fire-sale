@@ -95,3 +95,73 @@ def get_db():
     finally:
         conn.close()
         logger.debug("DB connection closed")
+
+
+def upsert_product(url: str, product_name: str, site: str, currency: str) -> int:
+    """Insert a product if it doesn't exist, or return the existing id."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO site_names (site) VALUES (%s) ON CONFLICT (site) DO NOTHING",
+                (site,),
+            )
+            cur.execute("SELECT id FROM site_names WHERE site = %s", (site,))
+            site_id = cur.fetchone()["id"]
+
+            cur.execute(
+                """
+                INSERT INTO products (product_url, product_name, site_id, currency)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (product_url) DO UPDATE SET product_name = EXCLUDED.product_name
+                RETURNING id
+                """,
+                (url, product_name, site_id, currency),
+            )
+            return cur.fetchone()["id"]
+
+
+def add_tracked_product(user_id: int, product_id: int, target_price: int, original_price: int) -> None:
+    """Insert a row into tracked_products. Raises ValueError if already tracked."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO tracked_products (user_id, product_id, target_price, original_price)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (user_id, product_id, target_price, original_price),
+                )
+            except psycopg2.errors.UniqueViolation:
+                raise ValueError("You are already tracking this product.")
+
+
+def get_tracked_products(user_id: int) -> list[dict]:
+    """Return all tracked products for a user with current price and product details."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    p.product_name,
+                    p.product_url,
+                    s.site,
+                    p.currency,
+                    tp.target_price,
+                    tp.original_price,
+                    (
+                        SELECT ph.current_price
+                        FROM price_history ph
+                        WHERE ph.product_id = p.id
+                        ORDER BY ph.scraped_at DESC
+                        LIMIT 1
+                    ) AS current_price
+                FROM tracked_products tp
+                JOIN products p ON p.id = tp.product_id
+                JOIN site_names s ON s.id = p.site_id
+                WHERE tp.user_id = %s
+                ORDER BY p.product_name
+                """,
+                (user_id,),
+            )
+            return cur.fetchall()

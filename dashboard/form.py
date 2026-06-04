@@ -6,7 +6,11 @@ import importlib.util
 import sys
 import streamlit as st
 
+from database import upsert_product, add_tracked_product
+
 # This could be on a script for styling, can be called here
+
+
 def page_title(title: str):
     """Displays the title of the page."""
     st.title(title, text_alignment="center")
@@ -51,14 +55,40 @@ def validate_submission(url: str, discount: int) -> dict:
     }
 
 
-def track_product(domain: str, url: str, discount: int) -> None:
-    """Tracks a product using the appropriate scraper."""
+def track_product(domain: str, url: str, discount: int, user_id: int) -> None:
+    """Tracks a product using the appropriate scraper and saves it to the DB."""
     scraper_path = get_scraper_path(domain)
     products = call_scraper(scraper_path, url)
 
-    if products:
-        st.success(f"Success! Now tracking this product at a £{discount} target discount")
-        display_product_info(products[0], domain) # The scraper returns a list of products
+    if not products or not products[0].get("page_exists"):
+        st.error(
+            "Could not retrieve product information. Please check the URL and try again.")
+        return
+
+    product = products[0]
+    try:
+        # Scraper returns price as a string e.g. "£749.99" — strip currency symbol
+        raw_price = product["current_price"]
+        if isinstance(raw_price, str):
+            raw_price = float(re.sub(r"[^\d.]", "", raw_price))
+
+        product_id = upsert_product(
+            url=url,
+            product_name=product["product_name"],
+            site=product["website_name"],
+            currency=product["currency_code"],
+        )
+        # target_price and original_price stored in pence
+        target_price = int((raw_price - discount) * 100)
+        original_price = int(raw_price * 100)
+        add_tracked_product(user_id, product_id, target_price, original_price)
+        st.success(
+            f"Success! Now tracking this product at a £{discount} target discount")
+        display_product_info(product, domain)
+    except ValueError as e:
+        st.warning(str(e))
+    except Exception:
+        st.error("Could not save tracked product. Please try again later.")
 
 
 def display_product_info(product: dict, domain: str) -> None:
@@ -66,21 +96,22 @@ def display_product_info(product: dict, domain: str) -> None:
     st.subheader("Product Information")
     with st.container(border=True):
         st.markdown(f"**Product Name:** {product.get('product_name', 'N/A')}")
-        st.markdown(f"**Current Price:** {product.get('current_price', 'N/A')}")
+        st.markdown(
+            f"**Current Price:** {product.get('current_price', 'N/A')}")
         st.markdown(f"**Website:** {domain.lower()}")
 
 
-def submission_outcome(url: str, discount: int) -> None:
+def submission_outcome(url: str, discount: int, user_id: int) -> None:
     """Validates and handles form submission."""
     result = validate_submission(url, discount)
     if result['is_valid']:
-        track_product(result['domain'], url, discount)
+        track_product(result['domain'], url, discount, user_id)
     else:
         for error in result['errors']:
             st.error(error)
 
 
-def form():
+def form(user_id: int):
     """Builds the form for adding a new product to track."""
     st.markdown("Add a new product to track")
 
@@ -92,15 +123,16 @@ def form():
     submitted = submit_button()
 
     if submitted:
-        submission_outcome(url, target_discount)
+        submission_outcome(url, target_discount, user_id)
 
 
 def form_page():
     """Builds the complete form page of the dashboard."""
     page_title("Product Tracking Form")
+    user_id = st.session_state.user["id"]
 
     with st.form("tracking_form"):
-        form()
+        form(user_id)
 
 
 def is_valid_url(url: str) -> bool:
@@ -141,7 +173,8 @@ def check_url_scrapable(url: str) -> str:
 def get_scraper_path(domain: str) -> str:
     """Maps the domain name to the corresponding scraper script path."""
     domain_normalised = domain.replace("-", "_")
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..'))
     return os.path.join(project_root, f"full_scraping/{domain}/{domain_normalised}_full_scraper.py")
 
 
