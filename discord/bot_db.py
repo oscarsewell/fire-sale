@@ -237,8 +237,7 @@ def link_discord_account(code, discord_user_id):
     """Link a Discord account to a user using a link code"""
     link_code = get_link_code(code)
     if link_code is None:
-        return False
-
+        return None
     with get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
