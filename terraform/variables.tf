@@ -2,6 +2,11 @@ data "aws_partition" "current" {}
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 
+variable "cohort" {
+	type        = string
+	default     = "c23"
+}
+
 variable "project_name" {
 	description = "Project identifier used in resource names."
 	type        = string

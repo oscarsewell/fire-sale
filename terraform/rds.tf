@@ -23,7 +23,7 @@ data "aws_subnets" "public" {
 # and ECS SG (ecs.tf); Terraform resolves cross-file dependencies automatically.
 
 resource "aws_security_group" "rds" {
-	name        = "${var.project_name}-${var.environment}-rds"
+	name        = "${var.cohort}-${var.project_name}-${var.environment}-rds"
 	description = "Allow inbound PostgreSQL from VPC-attached Lambda functions and ECS tasks."
 	vpc_id      = data.aws_vpc.main.id
 }
@@ -47,12 +47,12 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_internet" {
 }
 
 resource "aws_db_subnet_group" "main" {
-	name       = "${var.project_name}-${var.environment}"
+	name       = "${var.cohort}-${var.project_name}-${var.environment}-rds"
 	subnet_ids = data.aws_subnets.public.ids
 }
 
 resource "aws_db_instance" "main" {
-	identifier = "${var.project_name}-${var.environment}"
+	identifier = "${var.cohort}-${var.project_name}-${var.environment}-rds"
 
 	engine         = "postgres"
 	engine_version = "16"
@@ -80,7 +80,7 @@ resource "aws_db_instance" "main" {
 
 # Custom secret containing full DB connection details
 resource "aws_secretsmanager_secret" "rds_connection" {
-	name                    = "${var.project_name}-${var.environment}-rds-connection"
+	name                    = "${var.cohort}-${var.project_name}-${var.environment}-rds-connection"
 	description             = "RDS database connection details for ${var.project_name}"
 	recovery_window_in_days = 7
 }
