@@ -1,0 +1,85 @@
+DROP TABLE IF EXISTS discord_link_codes;
+DROP TABLE IF EXISTS price_history;
+DROP TABLE IF EXISTS tracked_products;
+DROP TABLE IF EXISTS passwords;
+DROP TABLE IF EXISTS email_verification_tokens;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS site_names;
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  discord VARCHAR(255) UNIQUE,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE passwords (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  salt VARCHAR(255) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE email_verification_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token);
+
+CREATE TABLE site_names (
+  id SERIAL PRIMARY KEY,
+  site VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  product_url VARCHAR(2048) NOT NULL UNIQUE,
+  product_name VARCHAR(255) NOT NULL,
+  site_id INT NOT NULL,
+  currency VARCHAR(3) NOT NULL,
+  page_exists BOOLEAN NOT NULL DEFAULT TRUE,
+  FOREIGN KEY (site_id) REFERENCES site_names(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_products_site_id ON products(site_id);
+
+CREATE TABLE tracked_products (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  product_id INT NOT NULL,
+  target_price INT NOT NULL,
+  original_price INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+  CONSTRAINT unique_user_product UNIQUE (user_id, product_id) -- prevents duplicate tracking
+);
+
+CREATE TABLE price_history (
+  id SERIAL PRIMARY KEY,
+  product_id INT NOT NULL,
+  current_price INT NOT NULL,
+  scraped_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE TABLE discord_link_codes (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  code VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_tracked_products_user ON tracked_products(user_id);
+CREATE INDEX idx_tracked_products_product ON tracked_products(product_id);
+CREATE INDEX idx_price_history_product_scraped ON price_history(product_id, scraped_at DESC);
+CREATE INDEX idx_discord_link_codes_user ON discord_link_codes(user_id);
