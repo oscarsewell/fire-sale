@@ -4,3 +4,4 @@ bcrypt
 boto3
 python-dotenv
 pytest-cov
+bs4
