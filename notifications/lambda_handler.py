@@ -145,10 +145,7 @@ def lambda_handler(event: dict, context) -> dict:
 
             return {
                 "statusCode": 200,
-                "body": {
-                    "emails": all_emails,
-                    "discord": all_discord
-                }
+                "body": response_body
             }
         finally:
             connection.close()
@@ -158,6 +155,7 @@ def lambda_handler(event: dict, context) -> dict:
         return {
             "statusCode": 500,
             "body": {
-                "error": str(e)
+                "emails": [],
+                "discord": []
             }
         }
