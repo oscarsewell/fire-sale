@@ -116,9 +116,10 @@ resource "aws_sfn_state_machine" "main" {
 			}
 
 			SendEmails = {
-				Type      = "Map"
-				ItemsPath = "$.notifications.Payload.body.emails"
-				Next      = "Success"
+				Type           = "Map"
+				ItemsPath      = "$.notifications.Payload.body.emails"
+				MaxConcurrency = 1
+				Next           = "Success"
 				Iterator = {
 					StartAt = "SendEmailViaSeS"
 					States = {
@@ -144,14 +145,15 @@ resource "aws_sfn_state_machine" "main" {
 							Catch = [
 								{
 									ErrorEquals = ["States.ALL"]
-									Next        = "LogSESError"
+									Next        = "RateLimitDelay"
 								}
 							]
-							End = true
+							Next = "RateLimitDelay"
 						}
-						LogSESError = {
-							Type = "Pass"
-							End  = true
+						RateLimitDelay = {
+							Type    = "Wait"
+							Seconds = 1
+							End     = true
 						}
 					}
 				}
