@@ -83,8 +83,10 @@ def lambda_handler(event: dict, context) -> dict:
     Returns:
         {
             "statusCode": 200 or 500,
-            "body": JSON string with emails and discord lists,
-            "headers": {"Content-Type": "application/json"}
+            "body": {
+                "emails": [...],
+                "discord": [...]
+            }
         }
     """
     load_dotenv()
@@ -143,8 +145,7 @@ def lambda_handler(event: dict, context) -> dict:
 
             return {
                 "statusCode": 200,
-                "body": json.dumps(response_body),
-                "headers": {"Content-Type": "application/json"}
+                "body": response_body
             }
         finally:
             connection.close()
@@ -153,6 +154,8 @@ def lambda_handler(event: dict, context) -> dict:
         logger.error("Error processing notifications: %s", str(e))
         return {
             "statusCode": 500,
-            "body": json.dumps({"error": str(e)}),
-            "headers": {"Content-Type": "application/json"}
+            "body": {
+                "emails": [],
+                "discord": []
+            }
         }
