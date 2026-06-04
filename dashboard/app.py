@@ -13,7 +13,7 @@ from tracked_products import render_tracked_products
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s – %(message)s",
 )
 logger = logging.getLogger(__name__)

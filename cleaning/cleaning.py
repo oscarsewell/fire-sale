@@ -5,6 +5,7 @@ and convert timestamp strings to datetime objects."""
 
 import logging
 from datetime import datetime
+from decimal import Decimal
 import re
 import regex
 import iso4217
@@ -79,11 +80,11 @@ def parse_price(price_str: str) -> int:
     numeric_price = match.group("amount").replace(',', '')
 
     try:
-        price_float = float(numeric_price)
+        price_decimal = Decimal(numeric_price)
         # Always convert to smallest currency unit (multiply by 100)
-        price_result = int(round(price_float * 100))
+        price_result = int(price_decimal * 100)
         logger.info("Parsed price: amount=%.2f (converted to smallest unit=%d)",
-                    price_float, price_result)
+                    price_decimal, price_result)
         return price_result
 
     except ValueError as e:
