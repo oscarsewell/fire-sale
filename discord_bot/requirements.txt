@@ -4,3 +4,5 @@ discord.py
 psycopg2-binary
 curl_cffi
 beautifulsoup4
+tasks
+boto3
