@@ -38,6 +38,12 @@ def render_tracked_products() -> None:
             col3.metric("Original Price",
                         f"{currency} {product['original_price'] / 100:.2f}")
             st.caption(f"Site: {product['site']}")
+            if st.button("Untrack", key=f"untrack_{product['product_id']}"):
+                try:
+                    remove_tracked_product(user_id, product["product_id"])
+                    st.rerun()
+                except Exception:
+                    st.error("Could not untrack this product. Please try again.")
 
 
 if __name__ == "__main__":
