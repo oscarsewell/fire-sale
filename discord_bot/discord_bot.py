@@ -387,18 +387,25 @@ async def send_discord_dm(discord_user_id, message):
 @tasks.loop(seconds=30)
 async def discord_notification_loop():
     """Poll SQS and send Discord notifications"""
-    sqs_messages = receive_discord_notifications()
+    try:
+        sqs_messages = await asyncio.to_thread(receive_discord_notifications)
+    except Exception as error:
+        print(f"Error receiving SQS messages: {error}")
+        return
 
     for sqs_message in sqs_messages:
         try:
             notification = parse_notification_message(sqs_message)
 
-            await send_discord_dm(
-                notification["discord_user_id"],
-                notification["message"],
-            )
+            discord_user_id = notification.get("discord_user_id") or notification.get("recipient")
+            message = notification.get("message")
 
-            delete_discord_notification(sqs_message["ReceiptHandle"])
+            if discord_user_id is None or message is None:
+                raise KeyError("SQS notification must include 'recipient'/'discord_user_id' and 'message'")
+
+            await send_discord_dm(discord_user_id, message)
+
+            await asyncio.to_thread(delete_discord_notification, sqs_message["ReceiptHandle"])
 
         except Exception as error:
             print(f"Error processing SQS message: {error}")
