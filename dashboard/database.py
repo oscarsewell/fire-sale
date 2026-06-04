@@ -143,6 +143,7 @@ def get_tracked_products(user_id: int) -> list[dict]:
             cur.execute(
                 """
                 SELECT
+                    p.id AS product_id,
                     p.product_name,
                     p.product_url,
                     s.site,
@@ -165,3 +166,15 @@ def get_tracked_products(user_id: int) -> list[dict]:
                 (user_id,),
             )
             return cur.fetchall()
+
+
+def remove_tracked_product(user_id: int, product_id: int) -> None:
+    """Delete a row from tracked_products for the given user and product."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tracked_products WHERE user_id = %s AND product_id = %s",
+                (user_id, product_id),
+            )
+            if cur.rowcount == 0:
+                raise ValueError("Tracked product not found for this user.")
