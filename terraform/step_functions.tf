@@ -142,13 +142,7 @@ resource "aws_sfn_state_machine" "main" {
 									}
 								}
 							}
-							Catch = [
-								{
-									ErrorEquals = ["States.ALL"]
-									Next        = "RateLimitDelay"
-								}
-							]
-							Next = "RateLimitDelay"
+										Next = "RateLimitDelay"
 						}
 						RateLimitDelay = {
 							Type    = "Wait"
