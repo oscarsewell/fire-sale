@@ -12,3 +12,5 @@ terraform.tfstate.backup
 tests/__pycache__/
 notifications/__pycache__/
 cleaning/__pycache__/
+discord/__pycache__/
+discord/discord_demo.py

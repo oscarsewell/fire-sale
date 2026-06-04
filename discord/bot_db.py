@@ -1,6 +1,8 @@
 """Database interactions for the Discord bot"""
 import os
 import psycopg2
+import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -47,6 +49,7 @@ def get_or_create_site(site_name):
 
 def get_or_create_product(product_url, product_name="Not set", site_name="Not set", currency="GBP", page_exists=True):
     """Create or fetch a product"""
+    site_id = get_or_create_site(site_name)
     with get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -61,7 +64,7 @@ def get_or_create_product(product_url, product_name="Not set", site_name="Not se
                     page_exists = EXCLUDED.page_exists
                 RETURNING id
                 """,
-                (product_url, product_name, site_name, currency, page_exists),
+                (product_url, product_name, site_id, currency, page_exists),
             )
             return cursor.fetchone()[0]
 
@@ -148,7 +151,7 @@ def get_user_by_discord_id(discord_user_id):
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, username, discord
+                SELECT id, username, email, discord
                 FROM users
                 WHERE discord = %s
                 """,
@@ -160,6 +163,107 @@ def get_user_by_discord_id(discord_user_id):
         return {
             "id": row[0],
             "username": row[1],
-            "discord": row[2],
+            "email": row[2],
+            "discord": row[3],
         }
     return None
+
+
+def add_price_history(product_id, current_price, scraped_at):
+    """Insert scraped price data for a product."""
+    scraped_at = datetime.utcnow() or datetime.now()
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO price_history
+                    (product_id, current_price, scraped_at)
+                VALUES (%s, %s, %s)
+                """,
+                (product_id, current_price, scraped_at),
+            )
+
+
+def update_tracking_target_price(discord_user_id, product_id, new_target_price):
+    """Update the target price for a tracked product"""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE tracked_products tp
+                SET target_price = %s
+                FROM users u
+                WHERE tp.user_id = u.id
+                AND u.discord = %s
+                AND tp.product_id = %s
+                RETURNING tp.product_id
+                """,
+                (new_target_price, str(discord_user_id), product_id),
+            )
+            updated_row = cursor.fetchone()
+
+    return updated_row is not None
+
+
+def get_link_code(code):
+    """Fetch a link code record"""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, user_id, code, expires_at, used_at
+                FROM discord_link_codes
+                WHERE code = %s
+                AND used_at IS NULL
+                AND expires_at > NOW()
+                """,
+                (code,),
+            )
+            row = cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row[0],
+        "user_id": row[1],
+        "code": row[2],
+        "expires_at": row[3],
+        "used_at": row[4],
+    }
+
+
+def link_discord_account(code, discord_user_id):
+    """Link a Discord account to a user using a link code"""
+    link_code = get_link_code(code)
+    if link_code is None:
+        return False
+
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE users
+                SET discord = %s
+                WHERE id = %s
+                RETURNING id, username, email, discord
+                """,
+                (str(discord_user_id), link_code["user_id"]),
+            )
+            user_row = cursor.fetchone()
+
+            cursor.execute(
+                """
+                UPDATE discord_link_codes
+                SET used_at = NOW()
+                WHERE id = %s
+                """,
+                (link_code["id"],),
+            )
+
+    return {
+        "id": user_row[0],
+        "username": user_row[1],
+        "email": user_row[2],
+        "discord": user_row[3],
+    }

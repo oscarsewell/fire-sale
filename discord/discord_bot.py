@@ -1,10 +1,13 @@
 """Discord bot for Hardware Hound notifications and tracking"""
 import os
 import discord
+import datetime
+from datetime import datetime
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from bot_db import insert_discord_user, get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id
+from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, add_price_history, update_tracking_target_price, link_discord_account
+from scraper_router import full_scrape_product
 
 load_dotenv()
 
@@ -19,8 +22,8 @@ ALLOWED_DOMAINS = {
     "www.ebuyer.com": "Ebuyer",
     "overclockers.co.uk": "Overclockers",
     "www.overclockers.co.uk": "Overclockers",
-    "scan.co.uk": "Scan",
-    "www.scan.co.uk": "Scan",
+    "awd-it.co.uk": "AWD-IT",
+    "www.awd-it.co.uk": "AWD-IT",
 }
 
 
@@ -50,15 +53,16 @@ async def on_ready():
 @tree.command(name="ping", description="Check if the bot is online")
 async def ping(interaction: discord.Interaction):
     """Responds to /ping to confirm the bot is online"""
-    await interaction.response.send_message("Hardware Hound is online.")
+    await interaction.response.send_message("Woof!\nThe Hardware Hound bot is online and ready to sniff out some deals!")
 
 
 @tree.command(name="track", description="Track a product by URL and target price")
 async def track(
-        interaction: discord.Interaction,
-        product_url: str,
-        target_price: int):
-    """Responds to /track to set up tracking for a product"""
+    interaction: discord.Interaction,
+    product_url: str,
+    target_price: int,
+):
+    """Responds to /track to set up tracking for a product."""
     linked_user = get_user_by_discord_id(interaction.user.id)
 
     if linked_user is None:
@@ -66,7 +70,7 @@ async def track(
             "Your Discord account is not linked to any account.\n\n"
             "Sign up on the Hardware Hound website to start tracking products and receiving notifications!\n"
             "https://hardwarehound.com/signup\n",
-            ephemeral=True
+            ephemeral=True,
         )
         return
 
@@ -75,19 +79,32 @@ async def track(
     if website_name is None:
         await interaction.response.send_message(
             "Sorry, that's not a supported product URL.\n\n"
-            "Supported sites are: Ebuyer, Overclockers, and Scan.",
-            ephemeral=True
+            "Supported sites are: Ebuyer, Overclockers, and AWD-IT.",
+            ephemeral=True,
         )
         return
 
     if not validate_target_price(target_price):
         await interaction.response.send_message(
             "Please enter a valid target price.",
-            ephemeral=True
+            ephemeral=True,
         )
         return
 
-    view = discord.ui.View(timeout=None)
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        product_info = full_scrape_product(product_url)
+    except Exception as error:
+        await interaction.followup.send(
+            "Sorry, there was an error fetching product details. "
+            "Please check the URL and try again.\n\n"
+            f"Error details: {error}",
+            ephemeral=True,
+        )
+        return
+
+    view = discord.ui.View(timeout=120)
 
     confirm_button = discord.ui.Button(
         label="Confirm Tracking",
@@ -104,28 +121,45 @@ async def track(
             user_id = linked_user["id"]
 
             product_id = get_or_create_product(
-                product_url=product_url, product_name="Not set", site_name=website_name, currency="GBP",)
+                product_url=product_info["product_url"],
+                product_name=product_info["product_name"],
+                site_name=product_info["site_name"],
+                currency=product_info["currency"],
+                page_exists=product_info["page_exists"],
+            )
 
-            add_tracking(user_id=user_id, product_id=product_id,
-                         target_price=target_price, original_price=0)
+            add_price_history(
+                product_id=product_id,
+                current_price=product_info["current_price"],
+                scraped_at=datetime.utcnow(),
+            )
+
+            add_tracking(
+                user_id=user_id,
+                product_id=product_id,
+                target_price=target_price,
+                original_price=product_info["original_price"] or 0,
+            )
 
             await button_interaction.response.edit_message(
                 content=(
                     "Tracking confirmed!\n\n"
-                    f"Website: {website_name}\n\n"
-                    f"URL: {product_url}\n\n"
-                    f"Target Price: {target_price}\n"
+                    f"Product: {product_info['product_name']}\n"
+                    f"Website: {product_info['site_name']}\n"
+                    f"URL: {product_info['product_url']}\n"
+                    f"Target Price: £{target_price}\n"
                 ),
-                view=None
+                view=None,
             )
 
-        except Exception as e:
+        except Exception as error:
             await button_interaction.response.edit_message(
                 content=(
-                    "Sorry, there was an error setting up tracking. Please try again later.\n\n"
-                    f"Error details: {str(e)}"
+                    "Sorry, there was an error setting up tracking. "
+                    "Please try again later.\n\n"
+                    f"Error details: {error}"
                 ),
-                view=None
+                view=None,
             )
 
     async def cancel_callback(button_interaction):
@@ -140,13 +174,16 @@ async def track(
     view.add_item(confirm_button)
     view.add_item(cancel_button)
 
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"You're about to track the following product:\n\n"
-        f"Website: {website_name}\n\n"
-        f"Product URL: {product_url}\n\n"
-        f"Target Price: {target_price}\n\n",
+        f"Product: {product_info['product_name']}\n"
+        f"Website: {product_info['site_name']}\n"
+        f"Current Price: £{product_info['current_price']}\n"
+        f"Original Price: £{product_info['original_price']}\n"
+        f"Target Price: £{target_price}\n\n"
+        f"URL: {product_info['product_url']}",
         view=view,
-        ephemeral=True
+        ephemeral=True,
     )
 
 
@@ -160,6 +197,7 @@ async def help_command(interaction: discord.Interaction):
         "`/link` - Link your Discord account to your Hardware Hound account\n"
         "`/track` - Track a product by URL and target price\n"
         "`/list` - Show your tracked products\n"
+        "`/edit` - Edit the target price for a tracked product\n"
         "`/untrack` - Stop tracking a product\n"
         "`/sites` - List supported retail sites\n"
         "`/help` - Show this help message\n",
@@ -186,8 +224,8 @@ async def list_command(interaction: discord.Interaction):
                 f"\n**{index}. {product['product_name']}**"
                 f"ID: {product['product_id']}\n"
                 f"Store: {product['site_name']}\n"
-                f"Original Price: {product['currency']}{product['original_price']}\n"
-                f"Target Price: {product['currency']}{product['target_price']}\n"
+                f"Original Price: £{product['original_price']}\n"
+                f"Target Price: £{product['target_price']}\n"
                 f"URL: {product['product_url']}\n"
             )
 
@@ -236,21 +274,28 @@ async def status(interaction: discord.Interaction):
     """Responds to /status to check if the user's Discord account is linked to an account"""
     await interaction.response.defer(ephemeral=True)
 
-    user = get_user_by_discord_id(interaction.user.id)
+    try:
 
-    if user:
+        user = get_user_by_discord_id(interaction.user.id)
+
+        if user:
+            await interaction.followup.send(
+                f"Your Discord account is linked to the following account:\n\n"
+                f"Username: {user['username']}\n"
+                f"Email: {user['email']}\n",
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                "Your Discord account is not linked to any account.\n\n"
+                "Sign up on the Hardware Hound website to start tracking products and receiving notifications!\n"
+                "https://hardwarehound.com/signup\n",
+                ephemeral=True
+            )
+
+    except Exception as error:
         await interaction.followup.send(
-            f"Your Discord account is linked to the following account:\n\n"
-            f"Username: {user['username']}\n"
-            f"Email: {user['email']}\n",
-            ephemeral=True
-        )
-    else:
-        await interaction.followup.send(
-            "Your Discord account is not linked to any account.\n\n"
-            "Sign up on the Hardware Hound website to start tracking products and receiving notifications!\n"
-            "https://hardwarehound.com/signup\n",
-            ephemeral=True
+            f"Something went wrong checking your account status: {error}", ephemeral=True
         )
 
 
@@ -261,7 +306,7 @@ async def sites(interaction: discord.Interaction):
         "**Supported Retail Sites:**\n\n"
         "Ebuyer\n"
         "Overclockers\n"
-        "Scan\n",
+        "AWD-IT\n",
         ephemeral=True,
     )
 
@@ -269,11 +314,63 @@ async def sites(interaction: discord.Interaction):
 @tree.command(name="link", description="Link your Discord account to your Hardware Hound account with a code")
 async def link(interaction: discord.Interaction, code: str):
     """Responds to /link to link the user's Discord account to their Hardware Hound account using a code"""
-    await interaction.response.send_message(
-        "Log in to your Hardware Hound account to generate a linking code.\n\n"
-        "Enter the code here to link your account.",
-        ephemeral=True
-    )
+    await interaction.response.defer(ephemeral=True)
 
+    try:
+        user = link_discord_account(code, interaction.user.id)
+
+        if user is None:
+            await interaction.followup.send(
+                "Invalid or expired code. Please generate a new code on the Hardware Hound website and try again.\n\n"
+                "https://hardwarehound.com/link-discord\n",
+                ephemeral=True
+            )
+            return
+
+        await interaction.followup.send(
+            f"Successfully linked your Discord account to the following account:\n\n"
+            f"Username: {user['username']}\n"
+            f"Email: {user['email']}\n",
+            ephemeral=True
+        )
+
+    except Exception as error:
+        await interaction.followup.send(
+            f"Something went wrong trying to link your account: {error}", ephemeral=True
+        )
+
+
+@tree.command(name="edit", description="Edit the target price for a tracked product")
+async def edit(interaction: discord.Interaction, product_id: int, new_target_price: int):
+    """Responds to /edit to change the target price for a tracked product"""
+    await interaction.response.defer(ephemeral=True)
+
+    if not validate_target_price(new_target_price):
+        await interaction.followup.send(
+            "Please enter a valid target price.",
+            ephemeral=True,
+        )
+        return
+
+    try:
+        was_updated = update_tracking_target_price(
+            interaction.user.id, product_id, new_target_price)
+
+        if not was_updated:
+            await interaction.followup.send(
+                "Couldn't find that product in your tracked list.\nPlease check the product ID and try again.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.followup.send(
+            f"Updated target price for product ID {product_id} to £{new_target_price}.",
+            ephemeral=True
+        )
+
+    except Exception as error:
+        await interaction.followup.send(
+            f"Something went wrong trying to update that product: {error}", ephemeral=True
+        )
 
 client.run(TOKEN)
