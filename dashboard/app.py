@@ -220,7 +220,7 @@ def render_sidebar() -> None:
             st.session_state.page = "login"
             st.session_state.pop("token_processed", None)
             st.rerun()
-    
+
 
 # ── Router ────────────────────────────────────────────────────────────────────
 if st.session_state.user:
