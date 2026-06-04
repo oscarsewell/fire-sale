@@ -1,12 +1,13 @@
 """Script which builds a tracked products page for a Streamlit dashboard."""
 
 import streamlit as st
-
+from style_components import render_header
 from database import get_tracked_products
 
 
 def render_tracked_products() -> None:
     """Render the tracked products page for authenticated users."""
+    render_header()
     st.title("Your Tracked Products")
     user_id = st.session_state.user["id"]
 

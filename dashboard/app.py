@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="Hardware Hound",
-    page_icon="🐾",
-    layout="centered",
+    page_icon=add_image("hardware_hound_logo_cropped.png", width=150),
+    layout="centered"
 )
 
 # ── Session state defaults ────────────────────────────────────────────────────
@@ -79,7 +79,9 @@ def _show_flash() -> None:
 # ── Page: Login ───────────────────────────────────────────────────────────────
 def render_login() -> None:
     """Render the login page."""
-    st.title("🐾 Hardware Hound")
+    add_image("hardware_hound_logo_cropped.png", width=150)
+    st.title(":orange[Hardware Hound]")
+
     st.subheader("Log in to your account")
     _show_flash()
 
@@ -117,7 +119,9 @@ def render_login() -> None:
 # ── Page: Register ────────────────────────────────────────────────────────────
 def render_register() -> None:
     """Render the registration page."""
-    st.title("🐾 Hardware Hound")
+    add_image("hardware_hound_logo_cropped.png", width=150)
+    st.title(":orange[Hardware Hound]")
+
     st.subheader("Create a new account")
     _show_flash()
 
@@ -180,7 +184,7 @@ def render_home() -> None:
     """Render the home page for authenticated users."""
     user = st.session_state.user
 
-    st.title("🐾 Hardware Hound")
+    render_header()
     st.write(f"Welcome back, **{user['username']}**!")
     st.divider()
 
