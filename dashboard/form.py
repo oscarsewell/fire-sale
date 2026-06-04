@@ -1,6 +1,5 @@
 """Script which builds a Streamlit dashboard with a submission form page."""
 
-from dis import disco
 import re
 import os
 import importlib.util
