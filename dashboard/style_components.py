@@ -15,7 +15,7 @@ CONTAINER_PADDING = "20px"
 # Colours
 BG_LIGHT_BLUE = "#ededff" # we dont want that colour
 BORDER_DARK_BLUE = "#03045e"
-LABEL_OFF_WHITE = "#F9FAFB"
+LABEL_OFF_WHITE = "#f9fafb"
 
 # Sizing
 BORDER_WIDTH = "2px"
