@@ -1,7 +1,6 @@
 """Discord bot for Hardware Hound notifications and tracking"""
 import os
 import discord
-import datetime
 from datetime import datetime
 from discord import app_commands
 from dotenv import load_dotenv
