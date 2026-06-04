@@ -13,7 +13,7 @@ from tracked_products import render_tracked_products
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s – %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -220,7 +220,7 @@ def render_sidebar() -> None:
             st.session_state.page = "login"
             st.session_state.pop("token_processed", None)
             st.rerun()
-    
+
 
 # ── Router ────────────────────────────────────────────────────────────────────
 if st.session_state.user:
