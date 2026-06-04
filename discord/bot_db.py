@@ -171,7 +171,8 @@ def get_user_by_discord_id(discord_user_id):
 
 def add_price_history(product_id, current_price, scraped_at):
     """Insert scraped price data for a product."""
-    scraped_at = datetime.utcnow() or datetime.now()
+    if scraped_at is None:
+        scraped_at = datetime.now(timezone.utc)
     with get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
