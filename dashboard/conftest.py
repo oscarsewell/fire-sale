@@ -3,7 +3,6 @@
 import pytest
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
-import os
 
 @pytest.fixture(scope="session")
 def app_test():
