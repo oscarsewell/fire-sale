@@ -11,8 +11,6 @@ img_bytes.seek(0)
 
 # Patch the add_image function to use our test image
 import style_components
-original_add_image = style_components.add_image
-
 def mock_add_image(file_path, width=200, caption=None):
     css = f"""
     <style>
