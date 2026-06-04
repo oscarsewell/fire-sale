@@ -1,6 +1,7 @@
 """Discord bot for Hardware Hound notifications and tracking"""
 import os
 import discord
+import asyncio
 from datetime import datetime
 from discord import app_commands
 from dotenv import load_dotenv
@@ -91,7 +92,7 @@ async def track(
     await interaction.response.defer(ephemeral=True)
 
     try:
-        product_info = full_scrape_product(product_url)
+        product_info = await asyncio.to_thread(full_scrape_product, product_url)
     except Exception as error:
         await interaction.followup.send(
             "Sorry, there was an error fetching product details. "
