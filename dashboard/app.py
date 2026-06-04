@@ -8,6 +8,7 @@ import streamlit as st
 from auth import login_user, register_user, verify_email_token
 from ses_email import send_verification_email
 from form import form_page
+from database import get_tracked_products
 from tracked_products import render_tracked_products
 
 
@@ -183,15 +184,16 @@ def render_home() -> None:
     st.write(f"Welcome back, **{user['username']}**!")
     st.divider()
 
+    try:
+        tracked_count = len(get_tracked_products(user["id"]))
+    except Exception:
+        tracked_count = 0
+
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Tracked products", 0)
+        st.metric("Tracked products", tracked_count)
     with col2:
         st.metric("Active price alerts", 0)
-
-    st.divider()
-    st.subheader("Your tracked products")
-    st.info("You are not tracking any products yet. Product tracking coming soon.")
 
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -218,7 +220,7 @@ def render_sidebar() -> None:
             st.session_state.page = "login"
             st.session_state.pop("token_processed", None)
             st.rerun()
-    
+
 
 # ── Router ────────────────────────────────────────────────────────────────────
 if st.session_state.user:

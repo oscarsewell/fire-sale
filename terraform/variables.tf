@@ -104,6 +104,12 @@ variable "discord_bot_rds_db_user_arn" {
 # ── External service ARNs ─────────────────────────────────────────────────────
 
 variable "ses_identity_arn" {
-  description = "SES identity ARN used for sending emails."
-  type        = string
+	description = "SES verified identity ARN used as the email sender."
+	type        = string
+	default     = "arn:aws:ses:eu-west-2:129033205317:identity/trainee.tom.king@sigmalabs.co.uk"
+}
+
+variable "discord_alert_queue_arn" {
+	description = "SQS queue ARN used to deliver price-alert messages to the Discord bot."
+	type        = string
 }

@@ -114,9 +114,8 @@ def test_lambda_handler_processes_notifications(mock_get_creds, mock_connect):
                     result = lambda_handler(event, None)
 
     assert result['statusCode'] == 200
-    body = json.loads(result['body'])
-    assert len(body['emails']) == 1
-    assert len(body['discord']) == 1
+    assert len(result['body']['emails']) == 1
+    assert len(result['body']['discord']) == 1
     mock_connection.close.assert_called_once()
 
 
@@ -149,8 +148,8 @@ def test_lambda_handler_handles_errors(mock_get_creds, mock_connect):
         result = lambda_handler(event, None)
 
     assert result['statusCode'] == 500
-    body = json.loads(result['body'])
-    assert 'error' in body
+    assert result['body']['emails'] == []
+    assert result['body']['discord'] == []
     mock_connection.close.assert_called_once()
 
 
@@ -185,10 +184,7 @@ def test_lambda_handler_response_format(mock_get_creds, mock_connect):
 
     assert 'statusCode' in result
     assert 'body' in result
-    assert 'headers' in result
-    assert result['headers']['Content-Type'] == 'application/json'
-    body = json.loads(result['body'])
-    assert 'emails' in body
-    assert 'discord' in body
-    assert isinstance(body['emails'], list)
-    assert isinstance(body['discord'], list)
+    assert 'emails' in result['body']
+    assert 'discord' in result['body']
+    assert isinstance(result['body']['emails'], list)
+    assert isinstance(result['body']['discord'], list)

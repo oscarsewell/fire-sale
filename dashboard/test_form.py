@@ -1,12 +1,14 @@
 """Tests for the Dashboard form page using Streamlit's AppTest class."""
 
 import pytest
+from unittest.mock import patch, MagicMock
 from streamlit.testing.v1 import AppTest
 from form import (
     extract_website_name,
     is_website_supported,
     check_url_scrapable,
-    get_scraper_path
+    get_scraper_path,
+    track_product,
 )
 
 
@@ -54,7 +56,8 @@ def test_submit_valid_product_shows_success_message(form):
     form.number_input[0].set_value(50)
     form.button[0].click()
     form.run()
-    assert "Success! Now tracking this product at a £50 target discount" in form.success[0].value
+    assert "Success! Now tracking this product at a £50 target discount" in form.success[
+        0].value
 
 
 def test_submit_high_discount(form):
@@ -63,7 +66,8 @@ def test_submit_high_discount(form):
     form.number_input[0].set_value(1999)
     form.button[0].click()
     form.run()
-    assert "Success! Now tracking this product at a £1999 target discount" in form.success[0].value
+    assert "Success! Now tracking this product at a £1999 target discount" in form.success[
+        0].value
 
 
 @pytest.mark.parametrize("valid_url", [
@@ -78,7 +82,8 @@ def test_submit_various_valid_urls_shows_success_message(form, valid_url):
     form.number_input[0].set_value(50)
     form.button[0].click()
     form.run()
-    assert "Success! Now tracking this product at a £50 target discount" in form.success[0].value
+    assert "Success! Now tracking this product at a £50 target discount" in form.success[
+        0].value
 
 
 # Form submission error
@@ -98,10 +103,42 @@ def test_submit_invalid_urls_shows_error_message(form, invalid_url):
     assert "Please enter a valid URL from our supported websites" in form.error[0].value
 
 
+# ── track_product ─────────────────────────────────────────────────────────────
+
+@patch("form.add_tracked_product")
+@patch("form.upsert_product", return_value=1)
+@patch("form.call_scraper")
+def test_track_product_parses_string_price_into_pence(mock_scraper, mock_upsert, mock_add):
+    """track_product should strip the currency symbol and convert price to pence."""
+    mock_scraper.return_value = [{
+        "page_exists": True,
+        "product_name": "Test GPU",
+        "current_price": "£749.99",
+        "original_price": "£799.99",
+        "currency_code": "GBP",
+        "website_name": "ebuyer",
+    }]
+    with patch("form.st"):
+        track_product("ebuyer", "https://ebuyer.com/p", 50, 1)
+
+    mock_add.assert_called_once_with(1, 1, 69999, 74999)
+
+
+@patch("form.call_scraper")
+def test_track_product_shows_error_when_page_not_found(mock_scraper):
+    """track_product should show an error when the scraper reports page_exists=False."""
+    mock_scraper.return_value = [{"page_exists": False}]
+    with patch("form.st") as mock_st:
+        track_product("ebuyer", "https://ebuyer.com/p", 50, 1)
+
+    mock_st.error.assert_called_once()
+    assert "Could not retrieve product information" in mock_st.error.call_args[0][0]
+
+
 def test_submit_zero_discount_shows_error_message(form):
     """Tests that submitting a target discount of £0 shows error message."""
     form.text_input[0].set_value("https://example.com/product")
-    form.number_input[0].set_value(0) # target discount of £0
+    form.number_input[0].set_value(0)  # target discount of £0
     form.button[0].click()
     form.run()
     assert "Please enter a valid URL from our supported websites" in form.error[0].value
@@ -125,7 +162,8 @@ def test_extract_website_name_with_https():
 
 def test_extract_website_name_with_www():
     """Tests extracting domain from URL with www prefix."""
-    assert extract_website_name("www.overclockers.co.uk/product") == "overclockers"
+    assert extract_website_name(
+        "www.overclockers.co.uk/product") == "overclockers"
 
 
 def test_extract_website_name_without_scheme():
