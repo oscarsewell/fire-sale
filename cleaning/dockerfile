@@ -5,13 +5,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Install system dependencies for curl_cffi
-RUN apt-get update && apt-get install -y gcc
-
-COPY ../requirements.txt .
+COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY awd_it_scraper.py lambda_handler.py ./
+COPY cleaning.py insertion.py lambda_handler.py .
 
 CMD ["lambda_handler.lambda_handler"]
