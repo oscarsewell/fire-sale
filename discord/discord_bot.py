@@ -73,9 +73,7 @@ async def track(
         )
         return
 
-    website_name = validate_product_url(product_url)
-
-    if website_name is None:
+    if validate_product_url(product_url) is None:
         await interaction.response.send_message(
             "Sorry, that's not a supported product URL.\n\n"
             "Supported sites are: Ebuyer, Overclockers, and AWD-IT.",
