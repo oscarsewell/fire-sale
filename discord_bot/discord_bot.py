@@ -2,12 +2,14 @@
 import os
 import discord
 import asyncio
+from discord.ext import tasks
 from datetime import datetime
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, add_price_history, update_tracking_target_price, link_discord_account
 from scraper_router import full_scrape_product
+from sqs_notifications import receive_discord_notifications, delete_discord_notification, parse_notification_message
 
 load_dotenv()
 
@@ -46,8 +48,12 @@ def validate_target_price(target_price):
 @client.event
 async def on_ready():
     """Runs when the bot successfully logs in"""
-    await tree.sync()
+    synced = await tree.sync()
     print(f'Logged in as {client.user}!')
+    print(f'Synced {len(synced)} command(s)')
+
+    if not discord_notification_loop.is_running():
+        discord_notification_loop.start()
 
 
 @tree.command(name="ping", description="Check if the bot is online")
@@ -370,5 +376,38 @@ async def edit(interaction: discord.Interaction, product_id: int, new_target_pri
         await interaction.followup.send(
             f"Something went wrong trying to update that product: {error}", ephemeral=True
         )
+
+
+async def send_discord_dm(discord_user_id, message):
+    """Sends a notification message to a user on Discord"""
+    user = await client.fetch_user(int(discord_user_id))
+    await user.send(message)
+
+
+@tasks.loop(seconds=30)
+async def discord_notification_loop():
+    """Poll SQS and send Discord notifications"""
+    try:
+        sqs_messages = await asyncio.to_thread(receive_discord_notifications)
+    except Exception as error:
+        print(f"Error receiving SQS messages: {error}")
+        return
+
+    for sqs_message in sqs_messages:
+        try:
+            notification = parse_notification_message(sqs_message)
+
+            discord_user_id = notification.get("discord_user_id") or notification.get("recipient")
+            message = notification.get("message")
+
+            if discord_user_id is None or message is None:
+                raise KeyError("SQS notification must include 'recipient'/'discord_user_id' and 'message'")
+
+            await send_discord_dm(discord_user_id, message)
+
+            await asyncio.to_thread(delete_discord_notification, sqs_message["ReceiptHandle"])
+
+        except Exception as error:
+            print(f"Error processing SQS message: {error}")
 
 client.run(TOKEN)
