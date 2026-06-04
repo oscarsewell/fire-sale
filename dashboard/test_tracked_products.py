@@ -1,34 +1,49 @@
 """Tests for the tracked products page."""
-
-import pytest
+from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
 
-
-@pytest.fixture
-def tracked_products_page():
-    """Fixture that creates and runs the tracked products page."""
-    at = AppTest.from_file("tracked_products.py")
-    at.run()
-    return at
-
-
-def test_page_renders(tracked_products_page):
-    """Tests that the tracked products page renders without errors."""
-    assert tracked_products_page.title is not None
+_MOCK_PRODUCT = {
+    "product_name": "Test GPU",
+    "product_url": "https://ebuyer.com/product",
+    "site": "ebuyer",
+    "currency": "GBP",
+    "target_price": 69999,
+    "original_price": 74999,
+    "current_price": 72000,
+}
 
 
-def test_page_has_title(tracked_products_page):
-    """Tests that the page displays the title 'Your Tracked Products'."""
-    assert len(tracked_products_page.title) > 0
-    assert tracked_products_page.title[0].value == "Your Tracked Products"
+def test_render_tracked_products_shows_product_cards():
+    """render_tracked_products should display a card for each tracked product."""
+    with patch("database.get_tracked_products", return_value=[_MOCK_PRODUCT]):
+        at = AppTest.from_file("tracked_products.py")
+        at.session_state["user"] = {"id": 1}
+        at.run()
+
+    assert not at.exception
+    assert "Your Tracked Products" in at.title[0].value
+    assert any("Test GPU" in m.value for m in at.markdown)
 
 
-def test_page_displays_description(tracked_products_page):
-    """Tests that the page displays the description text."""
-    assert "Products you are currently tracking:" in tracked_products_page.markdown[0].value
+def test_render_tracked_products_shows_empty_state():
+    """render_tracked_products should show an info message when there are no tracked products."""
+    with patch("database.get_tracked_products", return_value=[]):
+        at = AppTest.from_file("tracked_products.py")
+        at.session_state["user"] = {"id": 1}
+        at.run()
+
+    assert not at.exception
+    assert len(at.info) == 1
+    assert "not tracking any products" in at.info[0].value
 
 
-def test_page_shows_empty_state_message(tracked_products_page):
-    """Tests that the page shows the 'No tracked products yet' info message."""
-    assert len(tracked_products_page.info) > 0
-    assert any("No tracked products yet." in elem.value for elem in tracked_products_page.info)
+def test_render_tracked_products_shows_error_on_db_failure():
+    """render_tracked_products should show an error message when the DB call fails."""
+    with patch("database.get_tracked_products", side_effect=Exception("DB error")):
+        at = AppTest.from_file("tracked_products.py")
+        at.session_state["user"] = {"id": 1}
+        at.run()
+
+    assert not at.exception
+    assert len(at.error) == 1
+    assert "Could not load" in at.error[0].value
