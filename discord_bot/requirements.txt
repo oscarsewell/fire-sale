@@ -1,0 +1,6 @@
+currency-symbols
+python-dotenv
+discord.py
+psycopg2-binary
+curl_cffi
+beautifulsoup4
