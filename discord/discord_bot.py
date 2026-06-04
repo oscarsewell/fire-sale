@@ -221,7 +221,7 @@ async def list_command(interaction: discord.Interaction):
 
         for index, product in enumerate(tracked_products, start=1):
             message_lines.append(
-                f"\n**{index}. {product['product_name']}**"
+                f"\n**{index}. {product['product_name']}**\n"
                 f"ID: {product['product_id']}\n"
                 f"Store: {product['site_name']}\n"
                 f"Original Price: £{product['original_price']}\n"
