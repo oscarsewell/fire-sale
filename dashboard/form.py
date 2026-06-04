@@ -7,13 +7,12 @@ import sys
 import streamlit as st
 
 from database import upsert_product, add_tracked_product
-
-# This could be on a script for styling, can be called here
-
-
-def page_title(title: str):
-    """Displays the title of the page."""
-    st.title(title, text_alignment="center")
+from style_components import (
+    page_layout,
+    render_header, 
+    page_title,
+    header_spacing
+)
 
 
 def url_input_field() -> str:
@@ -25,9 +24,9 @@ def url_input_field() -> str:
 
 
 def discount_input_field() -> int:
-    """Creates a number input field for the target discount."""
+    """Creates a number input field for the target discount price."""
     return st.number_input(
-        label="Target Discount (GBP)",
+        label="Target Price (GBP)",
         min_value=0,
         step=10
     )
@@ -35,7 +34,7 @@ def discount_input_field() -> int:
 
 def submit_button() -> bool:
     """Creates a submit button for the form."""
-    return st.form_submit_button("Track Product")
+    return st.form_submit_button("Track", type="primary", use_container_width=True)
 
 
 def validate_submission(url: str, discount: int) -> dict:
@@ -83,22 +82,26 @@ def track_product(domain: str, url: str, discount: int, user_id: int) -> None:
         original_price = int(raw_price * 100)
         add_tracked_product(user_id, product_id, target_price, original_price)
         st.success(
-            f"Success! Now tracking this product at a £{discount} target discount")
-        display_product_info(product, domain)
+            f"Success! Now tracking this product at a £{discount} target discount price")
+        display_product_info(product)
     except ValueError as e:
         st.warning(str(e))
     except Exception:
         st.error("Could not save tracked product. Please try again later.")
 
 
-def display_product_info(product: dict, domain: str) -> None:
+def display_product_info(product: dict) -> None:
     """Displays product information in a container."""
-    st.subheader("Product Information")
     with st.container(border=True):
-        st.markdown(f"**Product Name:** {product.get('product_name', 'N/A')}")
-        st.markdown(
-            f"**Current Price:** {product.get('current_price', 'N/A')}")
-        st.markdown(f"**Website:** {domain.lower()}")
+        st.subheader("Product Information", text_alignment="center")
+        for key, value in product.items():
+             st.markdown(
+            f'<div style="background-color: #E8F8FD; padding: 15px; border-radius: 8px; margin-bottom: 10px;">'
+            f'<p style="font-weight: bold; margin: 0;">{key.replace("_", " ").title()}</p>'
+            f'<p style="margin: 0; color: #555;">{value}</p>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
 
 def submission_outcome(url: str, discount: int, user_id: int) -> None:
@@ -111,28 +114,55 @@ def submission_outcome(url: str, discount: int, user_id: int) -> None:
             st.error(error)
 
 
-def form(user_id: int):
+def form(user_id: int) -> None:
     """Builds the form for adding a new product to track."""
-    st.markdown("Add a new product to track")
+    with st.form("tracking_form"):
+        st.subheader("Submission form", text_alignment="center")
+        st.markdown("")
 
-    # Input fields
-    url = url_input_field()
-    target_discount = discount_input_field()
+        url = url_input_field()
+        target_discount = discount_input_field()
 
-    # Submit button
-    submitted = submit_button()
+        st.markdown("", unsafe_allow_html=True)
+        st.markdown("")
+        submitted = submit_button()
 
-    if submitted:
-        submission_outcome(url, target_discount, user_id)
+        if submitted:
+            submission_outcome(url, target_discount, user_id)
 
 
-def form_page():
+def form_page() -> None:
     """Builds the complete form page of the dashboard."""
-    page_title("Product Tracking Form")
+    page_layout("wide")
+    render_header()
+    header_spacing()
+
+    page_title("Add a new product to track")
+    st.markdown("")
+    left, right = st.columns(2, gap="large")
+    
     user_id = st.session_state.user["id"]
 
-    with st.form("tracking_form"):
+    with left:
         form(user_id)
+
+    with right:
+        st.markdown(
+        """<style>
+        .st-key-supported_websites {
+            background-color: #FFEDE6;
+            padding: 70px;
+        }
+        </style>""",
+        unsafe_allow_html=True
+        )
+        with st.container(key="supported_websites", border=True):
+            st.subheader("Supported websites", text_alignment="center")
+            col1, col2, col3 = st.columns(3)
+            with col2:
+                st.write("- Overclockers")
+                st.write("- Ebuyer")
+                st.write("- AWD-IT")
 
 
 def is_valid_url(url: str) -> bool:
