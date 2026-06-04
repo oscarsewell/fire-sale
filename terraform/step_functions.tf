@@ -111,7 +111,54 @@ resource "aws_sfn_state_machine" "main" {
 					FunctionName = aws_lambda_function.determine_notification.arn
 					"Payload.$"  = "$.cleaned"
 				}
-				End = true
+				ResultPath = "$.notifications"
+				Next        = "SendEmails"
+			}
+
+			SendEmails = {
+				Type      = "Map"
+				ItemsPath = "$.notifications.Payload.body.emails"
+				Next      = "Success"
+				Iterator = {
+					StartAt = "SendEmailViaSeS"
+					States = {
+						SendEmailViaSeS = {
+							Type     = "Task"
+							Resource = "arn:aws:states:::aws-sdk:ses:sendEmail"
+							Parameters = {
+								Source = "noreply@fire-sale.example.com"
+								Destination = {
+									"ToAddresses.$" = "[$.recipient]"
+								}
+								Message = {
+									Subject = {
+										"Data.$" = "$.subject"
+									}
+									Body = {
+										Html = {
+											"Data.$" = "$.body"
+										}
+									}
+								}
+							}
+							Catch = [
+								{
+									ErrorEquals = ["States.ALL"]
+									Next        = "LogSESError"
+								}
+							]
+							End = true
+						}
+						LogSESError = {
+							Type = "Pass"
+							End  = true
+						}
+					}
+				}
+			}
+
+			Success = {
+				Type = "Succeed"
 			}
 		}
 	})
