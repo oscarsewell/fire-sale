@@ -44,6 +44,30 @@ resource "aws_iam_role_policy_attachment" "step_functions_invoke_lambdas" {
 	policy_arn = aws_iam_policy.step_functions_invoke_lambdas.arn
 }
 
+data "aws_iam_policy_document" "step_functions_send_email" {
+	statement {
+		sid    = "AllowSESEmailSending"
+		effect = "Allow"
+
+		actions = [
+			"ses:SendEmail",
+			"ses:SendRawEmail"
+		]
+
+		resources = ["*"]
+	}
+}
+
+resource "aws_iam_policy" "step_functions_send_email" {
+	name   = "${var.cohort}-${var.project_name}-${var.environment}-step-functions-send-email"
+	policy = data.aws_iam_policy_document.step_functions_send_email.json
+}
+
+resource "aws_iam_role_policy_attachment" "step_functions_send_email" {
+	role       = aws_iam_role.step_functions_execution.name
+	policy_arn = aws_iam_policy.step_functions_send_email.arn
+}
+
 # ── State Machine ─────────────────────────────────────────────────────────────
 # Workflow: tracked product checker → parallel scraper fan-out → clean → notify.
 # Scraper branches are generated dynamically from var.scraper_names so adding a
@@ -112,7 +136,25 @@ resource "aws_sfn_state_machine" "main" {
 					"Payload.$"  = "$.cleaned"
 				}
 				ResultPath = "$.notifications"
-				Next        = "SendEmails"
+				Next        = "CheckNotificationStatus"
+			}
+
+			CheckNotificationStatus = {
+				Type = "Choice"
+				Choices = [
+					{
+						Variable       = "$.notifications.Payload.statusCode"
+						NumericEquals  = 200
+						Next           = "SendEmails"
+					}
+				]
+				Default = "HandleNotificationError"
+			}
+
+			HandleNotificationError = {
+				Type = "Fail"
+				Error = "NotificationProcessingFailed"
+				"Cause.$" = "$.notifications.Payload.body.error"
 			}
 
 			SendEmails = {
@@ -127,7 +169,7 @@ resource "aws_sfn_state_machine" "main" {
 							Type     = "Task"
 							Resource = "arn:aws:states:::aws-sdk:ses:sendEmail"
 							Parameters = {
-								Source = "noreply@fire-sale.example.com"
+								Source = element(split("/", var.ses_identity_arn), 1)
 								Destination = {
 										"ToAddresses.$" = "States.Array($.recipient)"
 								}
