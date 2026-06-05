@@ -2,12 +2,15 @@
 import json
 import logging
 import os
+import string
+import secrets
 from contextlib import contextmanager
 
 import boto3
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta
 
 load_dotenv()
 
@@ -178,3 +181,29 @@ def remove_tracked_product(user_id: int, product_id: int) -> None:
             )
             if cur.rowcount == 0:
                 raise ValueError("Tracked product not found for this user.")
+
+
+def generate_discord_link_code(user_id, expires_minutes=15):
+    """Create a temporary Discord linking code for a user."""
+    alphabet = string.ascii_uppercase + string.digits
+    code = "".join(secrets.choice(alphabet) for _ in range(6))
+
+    expires_at = datetime.now(timezone.utc) + \
+        timedelta(minutes=expires_minutes)
+
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO discord_link_codes (user_id, code, expires_at)
+                VALUES (%s, %s, %s)
+                RETURNING code, expires_at
+                """,
+                (user_id, code, expires_at),
+            )
+            row = cursor.fetchone()
+
+    return {
+        "code": row["code"],
+        "expires_at": row["expires_at"],
+    }

@@ -9,6 +9,7 @@ from auth import login_user, register_user, verify_email_token
 from ses_email import send_verification_email
 from form import form_page
 from database import get_tracked_products
+from discord_link import render_discord_link_page
 from tracked_products import render_tracked_products
 from style_components import (
     add_image,
@@ -220,6 +221,8 @@ def render_sidebar() -> None:
             _go("add_product")
         if st.button("Tracked Products", use_container_width=True):
             _go("tracked_products")
+        if st.button("Connect Discord", use_container_width=True):
+            _go("connect_discord")
 
         st.divider()
         if st.button("Log out", use_container_width=True):
@@ -237,6 +240,8 @@ if st.session_state.user:
         form_page()
     elif st.session_state.page == "tracked_products":
         render_tracked_products()
+    elif st.session_state.page == "connect_discord":
+        render_discord_link_page()
     else:
         render_home()
 elif st.session_state.page == "register":
