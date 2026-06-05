@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from babel.numbers import get_currency_symbol
 from style_components import render_header, header_spacing, metric_style
-from database import get_tracked_products, remove_tracked_product, get_price_history
+from database import get_tracked_products, remove_tracked_product, get_price_history, update_tracked_product_target_price
 
 
 def render_tracked_products() -> None:
@@ -85,12 +85,59 @@ def render_tracked_products() -> None:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-            if st.button("Untrack", key=f"untrack_{product['product_id']}", type="primary"):
-                try:
-                    remove_tracked_product(user_id, product["product_id"])
+            # Action buttons row
+            btn_col1, btn_col2 = st.columns(2)
+            with btn_col1:
+                if st.button("Untrack", key=f"untrack_{product['product_id']}", type="primary", use_container_width=True):
+                    try:
+                        remove_tracked_product(user_id, product["product_id"])
+                        st.rerun()
+                    except Exception:
+                        st.error(
+                            "Could not untrack this product. Please try again.")
+
+            with btn_col2:
+                # Toggle showing the edit inputs using session state
+                edit_key = f"edit_active_{product['product_id']}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+
+                if st.button("Edit Target Price", key=f"btn_edit_{product['product_id']}", use_container_width=True):
+                    st.session_state[edit_key] = not st.session_state[edit_key]
                     st.rerun()
-                except Exception:
-                    st.error("Could not untrack this product. Please try again.")
+
+            if st.session_state.get(edit_key, False):
+                with st.form(key=f"edit_form_{product['product_id']}"):
+                    new_target = st.number_input(
+                        "New Target Price",
+                        min_value=0.01,
+                        value=float(product['target_price'] / 100),
+                        step=0.01,
+                        format="%.2f"
+                    )
+                    submit_cols = st.columns(2)
+                    with submit_cols[0]:
+                        submitted = st.form_submit_button(
+                            "Update", use_container_width=True, type="primary")
+                    with submit_cols[1]:
+                        cancel = st.form_submit_button(
+                            "Cancel", use_container_width=True)
+
+                    if submitted:
+                        try:
+                            # Convert back to pence
+                            new_target_pence = int(round(new_target * 100))
+                            update_tracked_product_target_price(
+                                user_id, product["product_id"], new_target_pence)
+                            st.session_state[edit_key] = False
+                            st.success("Target price updated!")
+                            st.rerun()
+                        except Exception:
+                            st.error(
+                                "Could not update target price. Please try again.")
+                    elif cancel:
+                        st.session_state[edit_key] = False
+                        st.rerun()
 
 
 if __name__ == "__main__":
