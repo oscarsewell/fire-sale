@@ -35,6 +35,7 @@ def lambda_handler(event, context):
                 "product_id": product["product_id"],
                 "url": product["url"],
                 "current_price": product["current_price"],
+                "currency_code": product["currency_code"],
                 "scraped_at": product["scraped_at"],
                 "page_exists": product["page_exists"]
             })
@@ -43,7 +44,7 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
-            "body": json.dumps(output_products),
+            "body": output_products,
             "headers": {"Content-Type": "application/json"}
         }
 

@@ -50,11 +50,21 @@ def get_db_credentials() -> dict:
         response = secrets_client.get_secret_value(SecretId=secret_arn)
         credentials = json.loads(response["SecretString"])
 
+        # If password_secret_arn is provided instead of password, retrieve it
+        password = credentials.get("password")
+        if not password and credentials.get("password_secret_arn"):
+            logger.info("Retrieving password from nested secret")
+            password_response = secrets_client.get_secret_value(
+                SecretId=credentials["password_secret_arn"]
+            )
+            password_secret = json.loads(password_response["SecretString"])
+            password = password_secret.get("password")
+
         return {
             "host": credentials.get("host"),
             "port": int(credentials.get("port", 5432)),
             "username": credentials.get("username"),
-            "password": credentials.get("password"),
+            "password": password,
             "dbname": credentials.get("dbname"),
         }
     except Exception as e:

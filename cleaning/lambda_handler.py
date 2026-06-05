@@ -39,7 +39,10 @@ def lambda_handler(event: list, context) -> dict:
     defunct_products = []
 
     try:
+        logger.info("Received event: %s", event)
+        logger.info("Event type: %s", type(event))
         for product in event:
+            logger.info("Processing product: %s", product)
             cleaned = clean_product_data(product)
 
             if cleaned is None:
