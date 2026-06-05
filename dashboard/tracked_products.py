@@ -1,5 +1,6 @@
 """Script which builds a tracked products page for a Streamlit dashboard."""
 
+from datetime import datetime
 import plotly.graph_objects as go
 import streamlit as st
 from babel.numbers import get_currency_symbol
@@ -44,7 +45,13 @@ def render_tracked_products() -> None:
             st.caption(f"Site: {product['site']}")
 
             history = get_price_history(product["product_id"])
-            if len(history) > 1:
+
+            # Formulate history points: if no scraping has run yet, use the original_price at current time
+            if not history and product["original_price"] is not None:
+                history = [
+                    {"scraped_at": datetime.now(), "current_price": product["original_price"]}]
+
+            if len(history) >= 1:
                 dates = [row["scraped_at"] for row in history]
                 prices = [row["current_price"] / 100 for row in history]
                 target = product["target_price"] / 100
@@ -53,10 +60,11 @@ def render_tracked_products() -> None:
                 fig.add_trace(go.Scatter(
                     x=dates,
                     y=prices,
-                    mode="lines+markers",
+                    mode="lines+markers" if len(history) > 1 else "markers",
                     name="Price",
                     line=dict(color="#0066cc", width=2),
-                    marker=dict(size=5),
+                    marker=dict(size=8 if len(history) ==
+                                1 else 5, color="#0066cc"),
                 ))
                 fig.add_hline(
                     y=target,
