@@ -96,7 +96,7 @@ def test_track_product_parses_string_price_into_pence(mock_scraper, mock_upsert,
     with patch("form.st"):
         track_product("ebuyer", "https://ebuyer.com/p", 50, 1)
 
-    mock_add.assert_called_once_with(1, 1, 69999, 74999)
+    mock_add.assert_called_once_with(1, 1, 5000, 74999)
 
 
 @patch("form.call_scraper")
@@ -111,7 +111,7 @@ def test_track_product_shows_error_when_page_not_found(mock_scraper):
 
 
 def test_submit_zero_discount_shows_error_message(form):
-    """Tests that submitting a target discount of £0 shows error message."""
+    """Tests that submitting a target price of £0 shows error message."""
     url_input = get_form_element(form, "text_input", 0)
     discount_input = get_form_element(form, "number_input", 0)
     submit_button = get_form_element(form, "button", 0)
@@ -215,16 +215,18 @@ def test_submit_invalid_url_and_discount_shows_both_errors(form):
     form.run()
     assert len(form.error) == 2
     assert any("valid URL" in error.value for error in form.error)
-    assert any("discount over £0" in error.value for error in form.error)
+    assert any("target price over £0" in error.value for error in form.error)
 
 
-def test_submit_invalid_url_format_and_zero_discount_shows_both_errors(form):
-    """Tests both errors are shown for invalid URL format and zero discount."""
+def test_submit_invalid_url_format_and_zero_target_price_shows_both_errors(form):
+    """Tests both errors are shown for invalid URL format and zero target price."""
     form.text_input[0].set_value("not a url")
     form.number_input[0].set_value(0)
     form.button[0].click()
     form.run()
     assert len(form.error) == 2
+    assert any("valid URL" in error.value for error in form.error)
+    assert any("target price over £0" in error.value for error in form.error)
 
 
 def test_form_requires_user_id():

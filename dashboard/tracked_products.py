@@ -1,14 +1,16 @@
 """Script which builds a tracked products page for a Streamlit dashboard."""
 
 import streamlit as st
-from style_components import render_header
-from database import get_tracked_products, remove_tracked_product
+from style_components import render_header, header_spacing, metric_style
+from database import get_tracked_products
 
 
 def render_tracked_products() -> None:
     """Render the tracked products page for authenticated users."""
     render_header()
-    st.title("Your Tracked Products")
+    header_spacing()
+    metric_style()
+    st.title(":blue[Your Tracked Products]", ":paw_prints:", text_alignment="center")
     user_id = st.session_state.user["id"]
 
     try:
@@ -25,7 +27,7 @@ def render_tracked_products() -> None:
     for product in products:
         with st.container(border=True):
             st.markdown(
-                f"**[{product['product_name']}]({product['product_url']})")
+                f"**[{product['product_name']}]({product['product_url']})**")
             col1, col2, col3 = st.columns(3)
             currency = product["currency"]
             current = product["current_price"]

@@ -5,15 +5,15 @@ import streamlit as st
 # --- THEME VARIABLES ---
 
 ## Spacing for header (text, images and dividers)
-SPACING_NONE = "0rem"
+SPACING_NONE = "0rem !important"
 SPACING_SLIGHT = "0.5rem"
 SPACING_ONE = "1rem"
-SPACING_MAX = "2.5rem"
+SPACING_MAX = "4rem"
 
 CONTAINER_PADDING = "20px"
 
 # Colours
-BG_LIGHT_BLUE = "#ededff" # we dont want that colour
+BG_LIGHT_BLUE = "#e3efff"
 BORDER_DARK_BLUE = "#03045e"
 LABEL_OFF_WHITE = "#f9fafb"
 
@@ -22,27 +22,16 @@ BORDER_WIDTH = "2px"
 BORDER_RADIUS = "10px"
 
 
-def page_layout(layout: str) -> None:
-    """Defines the overall page layout (narrow or wide)."""
-    st.set_page_config(layout=layout)
-
-
 def render_header() -> None:
     """Render the app header with logo and title."""
-    left_column, center_column, right_column = st.columns([2, 1, 1])
+    left, center, right = st.columns([1, 2, 1])
 
-    with left_column:
+    with center:
         image, product_name = st.columns([0.2, 0.7], gap=None)
         with image:
             add_image("hardware_hound_logo_cropped.png", width=120)
         with product_name:
             st.header(":orange[Hardware Hound]", width="content")
-    
-    with center_column:
-        st.header("Menu")
-    
-    with right_column:
-        st.header("User", text_alignment="right")
     
     st.divider()
 
@@ -62,10 +51,37 @@ def header_spacing() -> None:
         padding-top: {SPACING_MAX};
         padding-bottom: {SPACING_NONE};
     }}
+    h2 {{
+        margin-top: {SPACING_NONE};
+        margin-bottom: {SPACING_NONE};
+        padding-top: {SPACING_NONE};
+        padding-bottom: {SPACING_NONE};
+    }}
     hr {{
         margin-top: {SPACING_NONE};
         margin-bottom: {SPACING_NONE};
+        padding-top: {SPACING_NONE};
     }}
+    </style>
+    """
+    _apply_css(css)
+
+
+def signup_button_style() -> None:
+    """Style the redirect action buttons to be centered and customized."""
+    css = """
+    <style>
+    div.stButton {
+        display: flex;
+        justify-content: center;
+    }
+    div.stButton button {
+        background-color: #0066cc;
+        color: white;
+        border-radius: 10px;
+        padding: 10px;
+        width: 95%;
+    }
     </style>
     """
     _apply_css(css)
@@ -98,5 +114,35 @@ def header_text_colour() -> None:
     <style>
     .header-label {{color: {LABEL_OFF_WHITE};}}
     </style>   
+    """
+    _apply_css(css)
+
+
+def metric_style() -> None:
+    """Defines the metric label and value font sizes."""
+    css = """
+    <style>
+    div[data-testid="stMetricValue"] {
+        font-size: 2.8rem !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 3rem !important;
+        font-weight: 500 !important;
+    }
+    </style>
+    """
+    _apply_css(css)
+
+
+def supported_websites_container() -> None:
+    """Define the supported websites container style."""
+    css = """
+    <style>
+    .st-key-supported_websites {
+        background-color: #FFEDE6;
+        padding: 2rem 0rem 2rem 2.5rem !important; 
+    }
+    </style>
     """
     _apply_css(css)

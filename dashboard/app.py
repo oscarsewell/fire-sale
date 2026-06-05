@@ -11,8 +11,12 @@ from form import form_page
 from database import get_tracked_products
 from tracked_products import render_tracked_products
 from style_components import (
+    signup_button_style,
     add_image,
-    render_header
+    render_header,
+    header_spacing,
+    metric_style,
+    supported_websites_container
 )
 
 
@@ -83,16 +87,18 @@ def _show_flash() -> None:
 # ── Page: Login ───────────────────────────────────────────────────────────────
 def render_login() -> None:
     """Render the login page."""
-    add_image("hardware_hound_logo_cropped.png", width=150)
-    st.title(":orange[Hardware Hound]")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        add_image("hardware_hound_logo_cropped.png", width=250)
+        st.title(":orange[Hardware Hound]")
 
-    st.subheader("Log in to your account")
+    st.subheader(":blue[Log in to your account]", text_alignment="center")
     _show_flash()
 
     with st.form("login_form"):
         email = st.text_input("Email address")
         password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Log in", use_container_width=True)
+        submitted = st.form_submit_button("Log in", use_container_width=True, type="primary")
 
     if submitted:
         if not email or not password:
@@ -114,8 +120,7 @@ def render_login() -> None:
                 logger.error("Unhandled error on login for %s: %s", email, e)
                 st.error(
                     "Unable to connect to the database. Please try again later.")
-
-    st.divider()
+    signup_button_style()
     if st.button("Don't have an account? Sign up", use_container_width=True):
         _go("register")
 
@@ -123,10 +128,12 @@ def render_login() -> None:
 # ── Page: Register ────────────────────────────────────────────────────────────
 def render_register() -> None:
     """Render the registration page."""
-    add_image("hardware_hound_logo_cropped.png", width=150)
-    st.title(":orange[Hardware Hound]")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        add_image("hardware_hound_logo_cropped.png", width=250)
+        st.title(":orange[Hardware Hound]")
 
-    st.subheader("Create a new account")
+    st.subheader(":blue[Create a new account]", text_alignment="center")
     _show_flash()
 
     with st.form("register_form"):
@@ -137,7 +144,8 @@ def render_register() -> None:
         )
         confirm = st.text_input("Confirm password", type="password")
         submitted = st.form_submit_button(
-            "Create account", use_container_width=True)
+            "Create account", use_container_width=True, type="primary"
+        )
 
     if submitted:
         if not all([username, email, password, confirm]):
@@ -177,21 +185,21 @@ def render_register() -> None:
                 logger.error(
                     "Unhandled error during registration for %s: %s", email, e)
                 st.error("Could not create your account. Please try again later.")
-
-    st.divider()
+    signup_button_style()
     if st.button("Already have an account? Log in", use_container_width=True):
         _go("login")
 
 
-# ── Page: Home (authenticated) (placeholder) ────────────────────────────────────────────────
+# ── Page: Home (authenticated) ────────────────────────────────────────────────
 def render_home() -> None:
     """Render the home page for authenticated users."""
     user = st.session_state.user
 
     render_header()
-    st.write(f"Welcome back, **{user['username']}**!")
-    st.divider()
-
+    header_spacing()
+    metric_style()
+    st.title(f":blue[Welcome back, :blue-background[{user['username']}]!]", ":paw_prints:", text_alignment="center")
+    st.markdown("")
     try:
         tracked_count = len(get_tracked_products(user["id"]))
     except Exception:
@@ -199,10 +207,28 @@ def render_home() -> None:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Tracked products", tracked_count)
+        st.metric(":orange[Tracked products]", tracked_count)
     with col2:
-        st.metric("Active price alerts", 0)
+        st.metric(":orange[Active price alerts]", 0)
+    
+    st.markdown("")
+    st.divider()
+    render_supported_websites()
 
+
+# ── Supported websites ───────────────────────────────────────────────────------
+def render_supported_websites() -> None:
+    """Render the supported websites section."""
+    supported_websites_container()
+    with st.container(key="supported_websites", border=True):
+        st.subheader(":blue[Supported websites]", text_alignment="center")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            add_image("ebuyer_logo.png", width=150, caption="Ebuyer")
+        with col2:
+            add_image("overclockers_logo.jpg", width=150, caption="Overclockers")
+        with col3:
+            add_image("awd_it_logo.png", width=150, caption="AWD-IT")
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 def render_sidebar() -> None:
@@ -210,15 +236,15 @@ def render_sidebar() -> None:
     user = st.session_state.user
 
     with st.sidebar:
-        st.markdown(f"**{user['username']}**")
+        st.header(f":blue[**{user['username']}**]")
         st.caption(user["email"])
         st.divider()
 
-        if st.button("Home", use_container_width=True):
+        if st.button("Home", use_container_width=True, type="primary"):
             _go("home")
-        if st.button("Add Product", use_container_width=True):
+        if st.button("Add Product", use_container_width=True, type="primary"):
             _go("add_product")
-        if st.button("Tracked Products", use_container_width=True):
+        if st.button("Tracked Products", use_container_width=True, type="primary"):
             _go("tracked_products")
 
         st.divider()
