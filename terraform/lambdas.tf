@@ -39,12 +39,21 @@ resource "aws_vpc_security_group_egress_rule" "lambda_http" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_vpc_security_group_egress_rule" "lambda_dns" {
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
   security_group_id = aws_security_group.lambda.id
-  description       = "DNS outbound to resolve domain names"
+  description       = "DNS (UDP) outbound to resolve domain names"
   from_port         = 53
   to_port           = 53
   ip_protocol       = "udp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "DNS (TCP) outbound to resolve domain names"
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
   cidr_ipv4         = "0.0.0.0/0"
 }
 
