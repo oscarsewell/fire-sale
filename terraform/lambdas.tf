@@ -158,7 +158,10 @@ data "aws_iam_policy_document" "lambda_cleaning" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+    resources = [
+      aws_db_instance.main.master_user_secret[0].secret_arn,
+      aws_secretsmanager_secret.rds_connection.arn,
+    ]
   }
 
   dynamic "statement" {
@@ -227,7 +230,10 @@ data "aws_iam_policy_document" "lambda_determine_notification" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+    resources = [
+      aws_db_instance.main.master_user_secret[0].secret_arn,
+      aws_secretsmanager_secret.rds_connection.arn,
+    ]
   }
 
   dynamic "statement" {
@@ -369,7 +375,8 @@ resource "aws_lambda_function" "cleaning" {
 
   environment {
     variables = {
-      ENVIRONMENT = var.environment
+      ENVIRONMENT   = var.environment
+      DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
 }
@@ -389,7 +396,8 @@ resource "aws_lambda_function" "determine_notification" {
 
   environment {
     variables = {
-      ENVIRONMENT = var.environment
+      ENVIRONMENT   = var.environment
+      DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
 }

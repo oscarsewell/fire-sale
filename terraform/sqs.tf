@@ -1,9 +1,9 @@
 resource "aws_sqs_queue" "discord_notifications_dlq" {
-  name = "hardware-hound-discord-notifications-dlq"
+  name = "${var.cohort}-${var.project_name}-${var.environment}-discord-notifications-dlq"
 }
 
 resource "aws_sqs_queue" "discord_notifications" {
-  name = "hardware-hound-discord-notifications"
+  name = "${var.cohort}-${var.project_name}-${var.environment}-discord-notifications"
 
   visibility_timeout_seconds = 90
   message_retention_seconds  = 345600 # 4 days

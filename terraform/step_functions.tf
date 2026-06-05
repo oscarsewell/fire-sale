@@ -89,9 +89,8 @@ resource "aws_sfn_state_machine" "main" {
           FunctionName = aws_lambda_function.tracked_product_checker.arn
           "Payload.$"  = "$"
         }
-        ResultSelector = { "urls.$" = "$.Payload.urls" }
-        ResultPath     = "$.tracked"
-        Next           = "ScrapeWebsites"
+        ResultPath = "$.tracked"
+        Next        = "ScrapeWebsites"
       }
 
       ScrapeWebsites = {
@@ -105,7 +104,7 @@ resource "aws_sfn_state_machine" "main" {
                 Resource = "arn:aws:states:::lambda:invoke"
                 Parameters = {
                   FunctionName = aws_lambda_function.scraper[name].arn
-                  "Payload.$"  = "$.tracked"
+                  "Payload.$"  = "$.tracked.Payload.body"
                 }
                 End = true
               }
@@ -152,9 +151,9 @@ resource "aws_sfn_state_machine" "main" {
 			}
 
 			HandleNotificationError = {
-				Type = "Fail"
+				Type  = "Fail"
 				Error = "NotificationProcessingFailed"
-				"Cause.$" = "$.notifications.Payload.body.error"
+				Cause = "Failed to process notifications. Check Lambda logs for details."
 			}
 
 			SendEmails = {
