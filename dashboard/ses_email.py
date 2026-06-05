@@ -15,12 +15,14 @@ def send_verification_email(
     to_email: str,
     username: str,
     verification_token: str,
-    base_url: str,
+    base_url: str | None = None,
 ) -> bool:
     """Send an account-verification email to a newly registered user.
 
     Returns True if the email was sent successfully, False on failure.
     """
+    if base_url is None:
+        base_url = os.getenv("APP_BASE_URL", "http://18.171.169.63:8501")
     verification_link = f"{base_url}?verify_token={verification_token}"
     region = os.getenv("AWS_REGION", "eu-west-2")
     from_email = os.getenv("SES_FROM_EMAIL")
