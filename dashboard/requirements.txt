@@ -5,6 +5,8 @@ boto3
 python-dotenv
 pytest-cov
 bs4
+regex
+iso4217
 babel
 curl_cffi
 plotly

@@ -65,20 +65,21 @@ def track_product(domain: str, url: str, target_price: int, user_id: int) -> Non
 
     product = products[0]
     try:
-        # Scraper returns price as a string e.g. "£749.99" — strip currency symbol
-        raw_price = product["current_price"]
-        if isinstance(raw_price, str):
-            raw_price = float(re.sub(r"[^\d.]", "", raw_price))
+        cleaning_path = get_cleaning_path()
+        cleaning = import_cleaning_module(cleaning_path)
+
+        cleaned_name = cleaning.clean_product_name(product["product_name"])
+        cleaned_currency = cleaning.clean_currency(product["currency_code"])
+        original_price = cleaning.parse_price(product["current_price"])
 
         product_id = upsert_product(
             url=url,
-            product_name=product["product_name"],
+            product_name=cleaned_name,
             site=product["website_name"],
-            currency=product["currency_code"],
+            currency=cleaned_currency,
         )
         # target_price and original_price stored in pence
         target_price = int(target_price * 100)
-        original_price = int(raw_price * 100)
 
         add_tracked_product(user_id, product_id, target_price, original_price)
         st.success(
@@ -198,6 +199,24 @@ def call_scraper(scraper_path: str, url: str):
     """Calls the scraper function."""
     scraper = import_scraper_module(scraper_path)
     return scraper.scrape_all_products([url])
+
+
+def get_cleaning_path() -> str:
+    """Maps to the cleaning script path."""
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..'))
+    return os.path.join(project_root, "cleaning/cleaning.py")
+
+
+def import_cleaning_module(cleaning_path: str):
+    """Dynamically imports the cleaning module."""
+    spec = importlib.util.spec_from_file_location("cleaning", cleaning_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load cleaning module from: {cleaning_path}")
+    cleaning = importlib.util.module_from_spec(spec)
+    sys.modules["cleaning"] = cleaning
+    spec.loader.exec_module(cleaning)
+    return cleaning
 
 
 if __name__ == "__main__":
