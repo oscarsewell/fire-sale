@@ -72,11 +72,6 @@ def track_product(domain: str, url: str, target_price: int, user_id: int) -> Non
         cleaned_currency = cleaning.clean_currency(product["currency_code"])
         original_price = cleaning.parse_price(product["current_price"])
 
-        # # Scraper returns price as a string e.g. "£749.99" — strip currency symbol
-        # raw_price = product["current_price"]
-        # if isinstance(raw_price, str):
-        #     raw_price = float(re.sub(r"[^\d.]", "", raw_price))
-
         product_id = upsert_product(
             url=url,
             product_name=cleaned_name,
@@ -85,7 +80,6 @@ def track_product(domain: str, url: str, target_price: int, user_id: int) -> Non
         )
         # target_price and original_price stored in pence
         target_price = int(target_price * 100)
-        # original_price = int(original_price * 100)
 
         add_tracked_product(user_id, product_id, target_price, original_price)
         st.success(
