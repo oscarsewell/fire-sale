@@ -1,8 +1,9 @@
 """Script which builds a tracked products page for a Streamlit dashboard."""
 
 import streamlit as st
+from babel.numbers import get_currency_symbol
 from style_components import render_header, header_spacing, metric_style
-from database import get_tracked_products
+from database import get_tracked_products, remove_tracked_product
 
 
 def render_tracked_products() -> None:
@@ -31,13 +32,14 @@ def render_tracked_products() -> None:
                 f"**[{product['product_name']}]({product['product_url']})**")
             col1, col2, col3 = st.columns(3)
             currency = product["currency"]
+            symbol = get_currency_symbol(currency, locale="en")
             current = product["current_price"] if product["current_price"] is not None else product["original_price"]
             col1.metric(
-                "Current Price", f"{currency} {current / 100:.2f}" if current is not None else "N/A")
+                "Current Price", f"{symbol}{current / 100:.2f}" if current is not None else "N/A")
             col2.metric("Target Price",
-                        f"{currency} {product['target_price'] / 100:.2f}")
+                        f"{symbol}{product['target_price'] / 100:.2f}")
             col3.metric("Original Price",
-                        f"{currency} {product['original_price'] / 100:.2f}")
+                        f"{symbol}{product['original_price'] / 100:.2f}")
             st.caption(f"Site: {product['site']}")
             if st.button("Untrack", key=f"untrack_{product['product_id']}"):
                 try:
