@@ -2,12 +2,13 @@
 
 import streamlit as st
 from database import generate_discord_link_code
+from style_components import render_header
 
 
 def render_discord_link_page():
     """Render page for generating a Discord linking code."""
+    render_header()
     user = st.session_state.user
-
     st.title("Connect Discord")
     st.write(
         "Generate a temporary code, then use it in Discord with "
