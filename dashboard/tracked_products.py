@@ -10,7 +10,8 @@ def render_tracked_products() -> None:
     render_header()
     header_spacing()
     metric_style()
-    st.title(":blue[Your Tracked Products]", ":paw_prints:", text_alignment="center")
+    st.title(":blue[Your Tracked Products]",
+             ":paw_prints:", text_alignment="center")
     user_id = st.session_state.user["id"]
 
     try:
@@ -30,7 +31,7 @@ def render_tracked_products() -> None:
                 f"**[{product['product_name']}]({product['product_url']})**")
             col1, col2, col3 = st.columns(3)
             currency = product["currency"]
-            current = product["current_price"]
+            current = product["current_price"] if product["current_price"] is not None else product["original_price"]
             col1.metric(
                 "Current Price", f"{currency} {current / 100:.2f}" if current is not None else "N/A")
             col2.metric("Target Price",
