@@ -194,3 +194,19 @@ def get_price_history(product_id: int) -> list[dict]:
                 (product_id,),
             )
             return cur.fetchall()
+
+
+def update_tracked_product_target_price(user_id: int, product_id: int, new_target_price: int) -> None:
+    """Update the target threshold price for a tracked product."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE tracked_products
+                SET target_price = %s
+                WHERE user_id = %s AND product_id = %s
+                """,
+                (new_target_price, user_id, product_id),
+            )
+            if cur.rowcount == 0:
+                raise ValueError("Tracked product not found for this user.")
