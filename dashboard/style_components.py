@@ -141,6 +141,7 @@ def supported_websites_container() -> None:
     <style>
     .st-key-supported_websites {
         background-color: #FFEDE6;
+        padding: 2rem 0rem 2rem 2.5rem !important; 
     }
     </style>
     """
