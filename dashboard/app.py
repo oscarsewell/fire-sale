@@ -98,7 +98,8 @@ def render_login() -> None:
     with st.form("login_form"):
         email = st.text_input("Email address")
         password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Log in", use_container_width=True, type="primary")
+        submitted = st.form_submit_button(
+            "Log in", use_container_width=True, type="primary")
 
     if submitted:
         if not email or not password:
@@ -198,19 +199,20 @@ def render_home() -> None:
     render_header()
     header_spacing()
     metric_style()
-    st.title(f":blue[Welcome back, :blue-background[{user['username']}]!]", ":paw_prints:", text_alignment="center")
+    st.title(
+        f":blue[Welcome back, :blue-background[{user['username']}]!]", ":paw_prints:", text_alignment="center")
     st.markdown("")
     try:
         tracked_count = len(get_tracked_products(user["id"]))
     except Exception:
         tracked_count = 0
 
-    col1, col2 = st.columns(2)
+    _, col1, _, col2, _ = st.columns([1, 1, 1, 1, 1])
     with col1:
         st.metric(":orange[Tracked products]", tracked_count)
     with col2:
         st.metric(":orange[Active price alerts]", 0)
-    
+
     st.markdown("")
     st.divider()
     render_supported_websites()
@@ -226,11 +228,14 @@ def render_supported_websites() -> None:
         with col1:
             add_image("ebuyer_logo.png", width=150, caption="Ebuyer")
         with col2:
-            add_image("overclockers_logo.jpg", width=150, caption="Overclockers")
+            add_image("overclockers_logo.jpg",
+                      width=150, caption="Overclockers")
         with col3:
             add_image("awd_it_logo.png", width=150, caption="AWD-IT")
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
+
+
 def render_sidebar() -> None:
     """Render the sidebar with navigation options for all authenticated pages."""
     user = st.session_state.user

@@ -169,22 +169,6 @@ def get_user_by_discord_id(discord_user_id):
     return None
 
 
-def add_price_history(product_id, current_price, scraped_at):
-    """Insert scraped price data for a product."""
-    if scraped_at is None:
-        scraped_at = datetime.now(timezone.utc)
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO price_history
-                    (product_id, current_price, scraped_at)
-                VALUES (%s, %s, %s)
-                """,
-                (product_id, current_price, scraped_at),
-            )
-
-
 def update_tracking_target_price(discord_user_id, product_id, new_target_price):
     """Update the target price for a tracked product"""
     with get_connection() as conn:

@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 from overclockers_scraper import scrape_all_products as scrape_overclockers
 from ebuyer_scraper import scrape_all_products as scrape_ebuyer
 from awd_it_scraper import scrape_all_products as scrape_awd_it
+from cleaning import (clean_product_name, parse_price,
+                      clean_currency, check_page_exists_bool,)
 
 
 def clean_price(price):
@@ -27,15 +29,41 @@ def get_domain(product_url):
 
 
 def normalise_scraped_product(scraped_product):
-    """Convert scraper output into the format the Discord bot expects."""
+    """Convert scraper output into cleaned format the Discord bot expects."""
+    page_exists = check_page_exists_bool(
+        scraped_product.get("page_exists", False)
+    )
+
+    if not page_exists:
+        return {
+            "product_url": scraped_product.get("url"),
+            "product_name": "Not set",
+            "current_price": None,
+            "original_price": None,
+            "currency": "GBP",
+            "site_name": scraped_product.get("website_name") or "Not set",
+            "page_exists": False,
+            "scraped_at": scraped_product.get("scraped_at"),
+        }
+
+    current_price = parse_price(scraped_product.get("current_price"))
+    original_price = parse_price(
+        scraped_product.get("original_price")
+        or scraped_product.get("current_price")
+    )
+
     return {
-        "product_url": scraped_product.get("url"),
-        "product_name": scraped_product.get("product_name") or "Not set",
-        "current_price": clean_price(scraped_product.get("current_price")),
-        "original_price": clean_price(scraped_product.get("original_price")),
-        "currency": scraped_product.get("currency_code") or "GBP",
+        "product_url": scraped_product.get("url").strip(),
+        "product_name": clean_product_name(
+            scraped_product.get("product_name") or "Not set"
+        ),
+        "current_price": current_price,
+        "original_price": original_price,
+        "currency": clean_currency(
+            scraped_product.get("currency_code") or "GBP"
+        ),
         "site_name": scraped_product.get("website_name") or "Not set",
-        "page_exists": scraped_product.get("page_exists", False),
+        "page_exists": page_exists,
         "scraped_at": scraped_product.get("scraped_at"),
     }
 
