@@ -41,7 +41,28 @@ def lambda_handler(event: list, context) -> dict:
     try:
         logger.info("Received event: %s", event)
         logger.info("Event type: %s", type(event))
-        for product in event:
+
+        # Extract products from Lambda response wrappers if needed
+        products = []
+        if isinstance(event, list) and len(event) > 0:
+            # Check if this is an array of Lambda response wrappers from Step Functions
+            if isinstance(event[0], dict) and 'Payload' in event[0]:
+                # Extract products from each scraper's Lambda response
+                for response in event:
+                    if 'Payload' in response and 'body' in response['Payload']:
+                        payload_body = response['Payload']['body']
+                        if isinstance(payload_body, list):
+                            products.extend(payload_body)
+                        else:
+                            products.append(payload_body)
+            else:
+                # Already a list of products
+                products = event
+        else:
+            products = event if isinstance(event, list) else [event]
+
+        logger.info("Processing %d products", len(products))
+        for product in products:
             logger.info("Processing product: %s", product)
             cleaned = clean_product_data(product)
 
