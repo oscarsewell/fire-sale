@@ -2,7 +2,10 @@
 import json
 import logging
 import os
+import secrets
+import string
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 
 import boto3
 import psycopg2
@@ -180,33 +183,27 @@ def remove_tracked_product(user_id: int, product_id: int) -> None:
                 raise ValueError("Tracked product not found for this user.")
 
 
-def get_price_history(product_id: int) -> list[dict]:
-    """Return all price history records for a product, oldest first."""
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT current_price, scraped_at
-                FROM price_history
-                WHERE product_id = %s
-                ORDER BY scraped_at ASC
-                """,
-                (product_id,),
-            )
-            return cur.fetchall()
+def generate_discord_link_code(user_id, expires_minutes=15):
+    """Create a temporary Discord linking code for a user."""
+    alphabet = string.ascii_uppercase + string.digits
+    code = "".join(secrets.choice(alphabet) for _ in range(6))
 
+    expires_at = datetime.now(timezone.utc) + \
+        timedelta(minutes=expires_minutes)
 
-def update_tracked_product_target_price(user_id: int, product_id: int, new_target_price: int) -> None:
-    """Update the target threshold price for a tracked product."""
     with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
+        with conn.cursor() as cursor:
+            cursor.execute(
                 """
-                UPDATE tracked_products
-                SET target_price = %s
-                WHERE user_id = %s AND product_id = %s
+                INSERT INTO discord_link_codes (user_id, code, expires_at)
+                VALUES (%s, %s, %s)
+                RETURNING code, expires_at
                 """,
-                (new_target_price, user_id, product_id),
+                (user_id, code, expires_at),
             )
-            if cur.rowcount == 0:
-                raise ValueError("Tracked product not found for this user.")
+            row = cursor.fetchone()
+
+    return {
+        "code": row["code"],
+        "expires_at": row["expires_at"],
+    }
