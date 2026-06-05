@@ -178,3 +178,19 @@ def remove_tracked_product(user_id: int, product_id: int) -> None:
             )
             if cur.rowcount == 0:
                 raise ValueError("Tracked product not found for this user.")
+
+
+def get_price_history(product_id: int) -> list[dict]:
+    """Return all price history records for a product, oldest first."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT current_price, scraped_at
+                FROM price_history
+                WHERE product_id = %s
+                ORDER BY scraped_at ASC
+                """,
+                (product_id,),
+            )
+            return cur.fetchall()
