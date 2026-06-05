@@ -217,6 +217,8 @@ def get_cleaning_path() -> str:
 def import_cleaning_module(cleaning_path: str):
     """Dynamically imports the cleaning module."""
     spec = importlib.util.spec_from_file_location("cleaning", cleaning_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load cleaning module from: {cleaning_path}")
     cleaning = importlib.util.module_from_spec(spec)
     sys.modules["cleaning"] = cleaning
     spec.loader.exec_module(cleaning)
