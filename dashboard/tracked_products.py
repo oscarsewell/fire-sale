@@ -3,7 +3,7 @@
 import streamlit as st
 from babel.numbers import get_currency_symbol
 from style_components import render_header, header_spacing, metric_style
-from database import get_tracked_products
+from database import get_tracked_products, remove_tracked_product
 
 
 def render_tracked_products() -> None:
