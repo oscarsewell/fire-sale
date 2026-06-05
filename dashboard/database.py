@@ -2,15 +2,15 @@
 import json
 import logging
 import os
-import string
 import secrets
+import string
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 
 import boto3
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
-from datetime import datetime, timezone, timedelta
 
 load_dotenv()
 
