@@ -128,10 +128,12 @@ def render_login() -> None:
 # ── Page: Register ────────────────────────────────────────────────────────────
 def render_register() -> None:
     """Render the registration page."""
-    add_image("hardware_hound_logo_cropped.png", width=150)
-    st.title(":orange[Hardware Hound]")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        add_image("hardware_hound_logo_cropped.png", width=250)
+        st.title(":orange[Hardware Hound]")
 
-    st.subheader("Create a new account")
+    st.subheader(":blue[Create a new account]", text_alignment="center")
     _show_flash()
 
     with st.form("register_form"):
@@ -142,7 +144,8 @@ def render_register() -> None:
         )
         confirm = st.text_input("Confirm password", type="password")
         submitted = st.form_submit_button(
-            "Create account", use_container_width=True)
+            "Create account", use_container_width=True, type="primary"
+        )
 
     if submitted:
         if not all([username, email, password, confirm]):
@@ -182,8 +185,7 @@ def render_register() -> None:
                 logger.error(
                     "Unhandled error during registration for %s: %s", email, e)
                 st.error("Could not create your account. Please try again later.")
-
-    st.divider()
+    signup_button_style()
     if st.button("Already have an account? Log in", use_container_width=True):
         _go("login")
 
@@ -222,9 +224,9 @@ def render_supported_websites() -> None:
         st.subheader(":blue[Supported websites]", text_alignment="center")
         col1, col2, col3 = st.columns(3)
         with col1:
-            add_image("overclockers_logo.jpg", width=150, caption="Overclockers")
-        with col2:
             add_image("ebuyer_logo.png", width=150, caption="Ebuyer")
+        with col2:
+            add_image("overclockers_logo.jpg", width=150, caption="Overclockers")
         with col3:
             add_image("awd_it_logo.png", width=150, caption="AWD-IT")
 
@@ -234,7 +236,7 @@ def render_sidebar() -> None:
     user = st.session_state.user
 
     with st.sidebar:
-        st.subheader(f":blue[**{user['username']}**]")
+        st.header(f":blue[**{user['username']}**]")
         st.caption(user["email"])
         st.divider()
 
