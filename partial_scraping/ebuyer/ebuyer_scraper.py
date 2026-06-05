@@ -1,10 +1,16 @@
 # pylint: disable = redefined-outer-name
 """A script to scrape price and product data from the HTML content on a website."""
 
-import json
 import logging
 from datetime import datetime
-from curl_cffi import requests
+
+try:
+    from curl_cffi import requests as curl_requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
+    import requests as curl_requests
+
 from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
 
@@ -14,13 +20,22 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 
+# Standard browser User-Agent for requests
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
 
 def fetch_html_content(url: str) -> str:
     """Fetches the HTML content for a given product."""
     if not isinstance(url, str):
         raise TypeError("URL must be a string.")
     try:
-        response = requests.get(url, impersonate="chrome", timeout=10)
+        if HAS_CURL_CFFI:
+            response = curl_requests.get(url, impersonate="chrome", timeout=10)
+        else:
+            response = curl_requests.get(
+                url, headers=BROWSER_HEADERS, timeout=10)
         if response.status_code == 404:
             log.warning("Page not found (404 Error): %s", url)
             return None
@@ -44,7 +59,8 @@ def extract_current_price(soup: BeautifulSoup) -> str:
     """Extracts the current price of the product from the parsed HTML."""
     price = soup.find("span", id="lblSellingPrice")
     if price:
-        log.debug("Extracted current price successfully: %s", price.text.strip())
+        log.debug("Extracted current price successfully: %s",
+                  price.text.strip())
         return price.text.strip()
 
     log.warning("Current price not found.")
@@ -71,7 +87,7 @@ def extract_all_product_info(url: str, product_id: int, soup: BeautifulSoup) -> 
     """Extracts and returns relevant data for each product as a dictionary."""
     return {
         "product_id": product_id,
-        "url": url, 
+        "url": url,
         "current_price": extract_current_price(soup),
         "currency_code": extract_currency_code(soup),
         "page_exists": True,
@@ -94,7 +110,8 @@ def create_product_info_not_found(url: str, product_id: int) -> dict:
 def scrape_all_products(urls_and_ids: list[tuple]) -> list[dict]:
     """Scrapes information on all products from a given list of URLs and IDs."""
     if not isinstance(urls_and_ids, list):
-        raise TypeError("Must pass a list of tuples containing product URLs and IDs.")
+        raise TypeError(
+            "Must pass a list of tuples containing product URLs and IDs.")
 
     log.info("Starting to scrape %d products", len(urls_and_ids))
     products = []
@@ -103,12 +120,13 @@ def scrape_all_products(urls_and_ids: list[tuple]) -> list[dict]:
         try:
             response = fetch_html_content(url)
 
-            if response is None: # Page doesn't exist anymore (404)
+            if response is None:  # Page doesn't exist anymore (404)
                 product_info = create_product_info_not_found(url, product_id)
             else:
                 soup = parse_html_content(response)
                 product_info = extract_all_product_info(url, product_id, soup)
-                log.info("Successfully scraped product information from URL: %s", url)
+                log.info(
+                    "Successfully scraped product information from URL: %s", url)
             products.append(product_info)
 
         except Exception as e:

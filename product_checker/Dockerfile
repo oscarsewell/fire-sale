@@ -9,6 +9,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY awd_it_scraper.py lambda_handler.py ./
+COPY tracked_product_checker.py lambda_handler.py ./
 
 CMD ["lambda_handler.lambda_handler"]

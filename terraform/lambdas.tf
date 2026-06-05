@@ -11,6 +11,52 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
+# ── Lambda VPC Configuration ──────────────────────────────────────────────────
+# Lambdas use the existing c23 VPC and public subnets (defined in rds.tf)
+# for stable outbound IP. They have a dedicated security group for egress.
+
+resource "aws_security_group" "lambda" {
+  name        = "${var.cohort}-${var.project_name}-${var.environment}-lambda"
+  description = "Allow Lambda functions outbound internet access for web scraping."
+  vpc_id      = data.aws_vpc.main.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_https" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "HTTPS outbound to the internet for web scraping"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_http" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "HTTP outbound to the internet for web scraping"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "DNS (UDP) outbound to resolve domain names"
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "DNS (TCP) outbound to resolve domain names"
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
 # Tracked Product Checker Lambda
 
 resource "aws_iam_role" "lambda_tracked_product_checker" {
@@ -44,6 +90,19 @@ data "aws_iam_policy_document" "lambda_tracked_product_checker" {
       aws_db_instance.main.master_user_secret[0].secret_arn,
       aws_secretsmanager_secret.rds_connection.arn
     ]
+  }
+
+  statement {
+    sid    = "AllowCreateNetworkInterface"
+    effect = "Allow"
+
+    actions = [
+      "ec2:CreateNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+    ]
+
+    resources = ["*"]
   }
 
   dynamic "statement" {
@@ -115,6 +174,19 @@ data "aws_iam_policy_document" "lambda_scraper" {
       "${aws_cloudwatch_log_group.lambda_scraper[each.key].arn}:*",
     ]
   }
+
+  statement {
+    sid    = "AllowCreateNetworkInterface"
+    effect = "Allow"
+
+    actions = [
+      "ec2:CreateNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+    ]
+
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "lambda_scraper" {
@@ -153,12 +225,28 @@ data "aws_iam_policy_document" "lambda_cleaning" {
   }
 
   statement {
+    sid    = "AllowCreateNetworkInterface"
+    effect = "Allow"
+
+    actions = [
+      "ec2:CreateNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "AllowReadDbSecret"
     effect = "Allow"
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+    resources = [
+      aws_db_instance.main.master_user_secret[0].secret_arn,
+      aws_secretsmanager_secret.rds_connection.arn,
+    ]
   }
 
   dynamic "statement" {
@@ -222,12 +310,28 @@ data "aws_iam_policy_document" "lambda_determine_notification" {
   }
 
   statement {
+    sid    = "AllowCreateNetworkInterface"
+    effect = "Allow"
+
+    actions = [
+      "ec2:CreateNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "AllowReadDbSecret"
     effect = "Allow"
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+    resources = [
+      aws_db_instance.main.master_user_secret[0].secret_arn,
+      aws_secretsmanager_secret.rds_connection.arn,
+    ]
   }
 
   dynamic "statement" {
@@ -320,6 +424,11 @@ resource "aws_lambda_function" "scraper" {
   timeout       = 300
   memory_size   = 512
 
+  vpc_config {
+    subnet_ids          = data.aws_subnets.public.ids
+    security_group_ids  = [aws_security_group.lambda.id]
+  }
+
   logging_config {
     log_format = "JSON"
     log_group  = aws_cloudwatch_log_group.lambda_scraper[each.key].name
@@ -340,6 +449,11 @@ resource "aws_lambda_function" "tracked_product_checker" {
   image_uri     = "${aws_ecr_repository.lambda["tracked-product-checker"].repository_url}:${var.image_tag}"
   timeout       = 180
   memory_size   = 256
+
+  vpc_config {
+    subnet_ids          = data.aws_subnets.public.ids
+    security_group_ids  = [aws_security_group.lambda.id]
+  }
 
   logging_config {
     log_format = "JSON"
@@ -362,6 +476,11 @@ resource "aws_lambda_function" "cleaning" {
   timeout       = 180
   memory_size   = 256
 
+  vpc_config {
+    subnet_ids          = data.aws_subnets.public.ids
+    security_group_ids  = [aws_security_group.lambda.id]
+  }
+
   logging_config {
     log_format = "JSON"
     log_group  = aws_cloudwatch_log_group.lambda_cleaning.name
@@ -369,7 +488,8 @@ resource "aws_lambda_function" "cleaning" {
 
   environment {
     variables = {
-      ENVIRONMENT = var.environment
+      ENVIRONMENT   = var.environment
+      DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
 }
@@ -382,6 +502,11 @@ resource "aws_lambda_function" "determine_notification" {
   timeout       = 60
   memory_size   = 128
 
+  vpc_config {
+    subnet_ids          = data.aws_subnets.public.ids
+    security_group_ids  = [aws_security_group.lambda.id]
+  }
+
   logging_config {
     log_format = "JSON"
     log_group  = aws_cloudwatch_log_group.lambda_determine_notification.name
@@ -389,7 +514,8 @@ resource "aws_lambda_function" "determine_notification" {
 
   environment {
     variables = {
-      ENVIRONMENT = var.environment
+      ENVIRONMENT   = var.environment
+      DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
 }
