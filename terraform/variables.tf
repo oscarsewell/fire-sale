@@ -108,8 +108,3 @@ variable "ses_identity_arn" {
 	type        = string
 	default     = "arn:aws:ses:eu-west-2:129033205317:identity/trainee.tom.king@sigmalabs.co.uk"
 }
-
-variable "discord_alert_queue_arn" {
-	description = "SQS queue ARN used to deliver price-alert messages to the Discord bot."
-	type        = string
-}

@@ -5,3 +5,7 @@ boto3
 python-dotenv
 pytest-cov
 bs4
+babel
+curl_cffi
+plotly
+

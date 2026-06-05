@@ -3,11 +3,10 @@ import os
 import discord
 import asyncio
 from discord.ext import tasks
-from datetime import datetime
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, add_price_history, update_tracking_target_price, link_discord_account
+from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, update_tracking_target_price, link_discord_account
 from scraper_router import full_scrape_product
 from sqs_notifications import receive_discord_notifications, delete_discord_notification, parse_notification_message
 
@@ -66,7 +65,7 @@ async def ping(interaction: discord.Interaction):
 async def track(
     interaction: discord.Interaction,
     product_url: str,
-    target_price: int,
+    target_price: float,
 ):
     """Responds to /track to set up tracking for a product."""
     linked_user = get_user_by_discord_id(interaction.user.id)
@@ -94,6 +93,8 @@ async def track(
             ephemeral=True,
         )
         return
+
+    target_price_pence = int(round(target_price * 100))
 
     await interaction.response.defer(ephemeral=True)
 
@@ -132,16 +133,10 @@ async def track(
                 page_exists=product_info["page_exists"],
             )
 
-            add_price_history(
-                product_id=product_id,
-                current_price=product_info["current_price"],
-                scraped_at=datetime.utcnow(),
-            )
-
             add_tracking(
                 user_id=user_id,
                 product_id=product_id,
-                target_price=target_price,
+                target_price=target_price_pence,
                 original_price=product_info["original_price"] or 0,
             )
 
@@ -151,7 +146,7 @@ async def track(
                     f"Product: {product_info['product_name']}\n"
                     f"Website: {product_info['site_name']}\n"
                     f"URL: {product_info['product_url']}\n"
-                    f"Target Price: £{target_price}\n"
+                    f"Target Price: £{target_price:.2f}\n"
                 ),
                 view=None,
             )
@@ -182,9 +177,9 @@ async def track(
         f"You're about to track the following product:\n\n"
         f"Product: {product_info['product_name']}\n"
         f"Website: {product_info['site_name']}\n"
-        f"Current Price: £{product_info['current_price']}\n"
-        f"Original Price: £{product_info['original_price']}\n"
-        f"Target Price: £{target_price}\n\n"
+        f"Current Price: £{product_info['current_price']/100:.2f}\n"
+        f"Original Price: £{product_info['original_price']/100:.2f}\n"
+        f"Target Price: £{target_price:.2f}\n\n"
         f"URL: {product_info['product_url']}",
         view=view,
         ephemeral=True,
@@ -228,8 +223,8 @@ async def list_command(interaction: discord.Interaction):
                 f"\n**{index}. {product['product_name']}**\n"
                 f"ID: {product['product_id']}\n"
                 f"Store: {product['site_name']}\n"
-                f"Original Price: £{product['original_price']}\n"
-                f"Target Price: £{product['target_price']}\n"
+                f"Original Price: £{product['original_price']/100:.2f}\n"
+                f"Target Price: £{product['target_price']/100:.2f}\n"
                 f"URL: {product['product_url']}\n"
             )
 
@@ -345,7 +340,7 @@ async def link(interaction: discord.Interaction, code: str):
 
 
 @tree.command(name="edit", description="Edit the target price for a tracked product")
-async def edit(interaction: discord.Interaction, product_id: int, new_target_price: int):
+async def edit(interaction: discord.Interaction, product_id: int, new_target_price: float):
     """Responds to /edit to change the target price for a tracked product"""
     await interaction.response.defer(ephemeral=True)
 
@@ -357,8 +352,9 @@ async def edit(interaction: discord.Interaction, product_id: int, new_target_pri
         return
 
     try:
+        new_target_price_pence = int(round(new_target_price * 100))
         was_updated = update_tracking_target_price(
-            interaction.user.id, product_id, new_target_price)
+            interaction.user.id, product_id, new_target_price_pence)
 
         if not was_updated:
             await interaction.followup.send(
@@ -368,7 +364,7 @@ async def edit(interaction: discord.Interaction, product_id: int, new_target_pri
             return
 
         await interaction.followup.send(
-            f"Updated target price for product ID {product_id} to £{new_target_price}.",
+            f"Updated target price for product ID {product_id} to £{new_target_price:.2f}.",
             ephemeral=True
         )
 
@@ -397,11 +393,13 @@ async def discord_notification_loop():
         try:
             notification = parse_notification_message(sqs_message)
 
-            discord_user_id = notification.get("discord_user_id") or notification.get("recipient")
+            discord_user_id = notification.get(
+                "discord_user_id") or notification.get("recipient")
             message = notification.get("message")
 
             if discord_user_id is None or message is None:
-                raise KeyError("SQS notification must include 'recipient'/'discord_user_id' and 'message'")
+                raise KeyError(
+                    "SQS notification must include 'recipient'/'discord_user_id' and 'message'")
 
             await send_discord_dm(discord_user_id, message)
 

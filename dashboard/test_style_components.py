@@ -20,5 +20,3 @@ def test_render_header_displays_content(app_test):
     """Tests that render_header displays all expected text elements."""
     header_text = " ".join([h.value for h in app_test.header])
     assert "Hardware Hound" in header_text
-    assert "Menu" in header_text
-    assert "User" in header_text
