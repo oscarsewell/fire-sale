@@ -166,7 +166,6 @@ def render_register() -> None:
                     to_email=email.strip().lower(),
                     username=username.strip(),
                     verification_token=result["verification_token"],
-                    base_url=base_url,
                 )
                 if not email_sent:
                     logger.error(

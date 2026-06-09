@@ -1,17 +1,19 @@
 """Script which builds a Streamlit dashboard with a submission form page."""
 
+from style_components import (
+    render_header,
+    page_title,
+    header_spacing
+)
+from database import upsert_product, add_tracked_product
+import logging
 import re
 import os
 import importlib.util
 import sys
 import streamlit as st
 
-from database import upsert_product, add_tracked_product
-from style_components import (
-    render_header, 
-    page_title,
-    header_spacing
-)
+logger = logging.getLogger(__name__)
 
 
 def url_input_field() -> str:
@@ -87,8 +89,9 @@ def track_product(domain: str, url: str, target_price: int, user_id: int) -> Non
         display_product_info(product)
     except ValueError as e:
         st.warning(str(e))
-    except Exception:
-        st.error("Could not save tracked product. Please try again later.")
+    except Exception as e:
+        logger.error("Error saving tracked product for URL %s: %s", url, e)
+        st.error(f"Could not save tracked product: {e}")
 
 
 def display_product_info(product: dict) -> None:
@@ -96,13 +99,13 @@ def display_product_info(product: dict) -> None:
     with st.container(border=True):
         st.subheader(":blue[Product Information]", text_alignment="center")
         for key, value in product.items():
-             st.markdown(
-            f'<div style="background-color: #E8F8FD; padding: 15px; border-radius: 8px; margin-bottom: 10px;">'
-            f'<p style="font-weight: bold; margin: 0;">{key.replace("_", " ").title()}</p>'
-            f'<p style="margin: 0; color: #555;">{value}</p>'
-            f'</div>',
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                f'<div style="background-color: #E8F8FD; padding: 15px; border-radius: 8px; margin-bottom: 10px;">'
+                f'<p style="font-weight: bold; margin: 0;">{key.replace("_", " ").title()}</p>'
+                f'<p style="margin: 0; color: #555;">{value}</p>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
 
 
 def submission_outcome(url: str, target_price: int, user_id: int) -> None:
@@ -138,7 +141,7 @@ def form_page() -> None:
     header_spacing()
 
     page_title("Add a new product to track")
-    st.markdown("") 
+    st.markdown("")
     user_id = st.session_state.user["id"]
     form(user_id)
 
@@ -212,7 +215,8 @@ def import_cleaning_module(cleaning_path: str):
     """Dynamically imports the cleaning module."""
     spec = importlib.util.spec_from_file_location("cleaning", cleaning_path)
     if spec is None or spec.loader is None:
-        raise ImportError(f"Could not load cleaning module from: {cleaning_path}")
+        raise ImportError(
+            f"Could not load cleaning module from: {cleaning_path}")
     cleaning = importlib.util.module_from_spec(spec)
     sys.modules["cleaning"] = cleaning
     spec.loader.exec_module(cleaning)
