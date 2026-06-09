@@ -108,3 +108,33 @@ variable "ses_identity_arn" {
 	type        = string
 	default     = "arn:aws:ses:eu-west-2:129033205317:identity/trainee.tom.king@sigmalabs.co.uk"
 }
+
+# ── Bright Data ISP Proxy Configuration ───────────────────────────────────────
+
+variable "brightdata_proxy_host" {
+  description = "Bright Data ISP proxy host address (e.g., brd.superproxy.io)"
+  type        = string
+  default     = "brd.superproxy.io"
+  sensitive   = false
+}
+
+variable "brightdata_proxy_port" {
+  description = "Bright Data ISP proxy port number (e.g., 33335)"
+  type        = string
+  default     = "33335"
+  sensitive   = false
+}
+
+variable "brightdata_proxy_username" {
+  description = "Bright Data ISP proxy username"
+  type        = string
+  default     = "brd-customer-hl_54e4c9b9-zone-isp_proxy1"
+  sensitive   = true
+}
+
+variable "brightdata_proxy_password" {
+  description = "Bright Data ISP proxy password"
+  type        = string
+  default     = "8nns1ojmgurc"
+  sensitive   = true
+}
