@@ -57,6 +57,15 @@ resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+resource "aws_vpc_security_group_egress_rule" "lambda_brightdata_proxy" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "Bright Data ISP proxy port for IP rotation"
+  from_port         = 33335
+  to_port           = 33335
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
 # Tracked Product Checker Lambda
 
 resource "aws_iam_role" "lambda_tracked_product_checker" {
@@ -437,8 +446,12 @@ resource "aws_lambda_function" "scraper" {
 
   environment {
     variables = {
-      ENVIRONMENT  = var.environment
-      WEBSITE_NAME = each.key
+      ENVIRONMENT           = var.environment
+      WEBSITE_NAME          = each.key
+      BRIGHTDATA_HOST       = var.brightdata_proxy_host
+      BRIGHTDATA_PORT       = var.brightdata_proxy_port
+      BRIGHTDATA_USERNAME   = var.brightdata_proxy_username
+      BRIGHTDATA_PASSWORD   = var.brightdata_proxy_password
     }
   }
 
