@@ -416,13 +416,14 @@ resource "aws_cloudwatch_log_group" "lambda_determine_notification" {
 
 resource "aws_lambda_function" "scraper" {
   for_each = toset(var.scraper_names)
-
-  function_name = "${var.cohort}-${var.project_name}-${var.environment}-scraper-${each.key}"
-  role          = aws_iam_role.lambda_scraper[each.key].arn
-  package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.lambda["scraper-${each.key}"].repository_url}:${var.image_tag}"
-  timeout       = 300
-  memory_size   = 512
+  
+  function_name                     = "${var.cohort}-${var.project_name}-${var.environment}-scraper-${each.key}"
+  role                              = aws_iam_role.lambda_scraper[each.key].arn
+  package_type                      = "Image"
+  image_uri                         = "${aws_ecr_repository.lambda["scraper-${each.key}"].repository_url}:${var.image_tag}"
+  timeout                           = 300
+  memory_size                       = 512
+  reserved_concurrent_executions    = 2
 
   vpc_config {
     subnet_ids          = data.aws_subnets.public.ids
@@ -440,15 +441,20 @@ resource "aws_lambda_function" "scraper" {
       WEBSITE_NAME = each.key
     }
   }
+
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
 }
 
 resource "aws_lambda_function" "tracked_product_checker" {
-  function_name = "${var.cohort}-${var.project_name}-${var.environment}-tracked-product-checker"
-  role          = aws_iam_role.lambda_tracked_product_checker.arn
-  package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.lambda["tracked-product-checker"].repository_url}:${var.image_tag}"
-  timeout       = 180
-  memory_size   = 256
+  function_name                  = "${var.cohort}-${var.project_name}-${var.environment}-tracked-product-checker"
+  role                           = aws_iam_role.lambda_tracked_product_checker.arn
+  package_type                   = "Image"
+  image_uri                      = "${aws_ecr_repository.lambda["tracked-product-checker"].repository_url}:${var.image_tag}"
+  timeout                        = 180
+  memory_size                    = 256
+  reserved_concurrent_executions = 1
 
   vpc_config {
     subnet_ids          = data.aws_subnets.public.ids
@@ -466,15 +472,20 @@ resource "aws_lambda_function" "tracked_product_checker" {
       DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
+
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
 }
 
 resource "aws_lambda_function" "cleaning" {
-  function_name = "${var.cohort}-${var.project_name}-${var.environment}-lambda-cleaning"
-  role          = aws_iam_role.lambda_cleaning.arn
-  package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.lambda["cleaning"].repository_url}:${var.image_tag}"
-  timeout       = 180
-  memory_size   = 256
+  function_name                  = "${var.cohort}-${var.project_name}-${var.environment}-lambda-cleaning"
+  role                           = aws_iam_role.lambda_cleaning.arn
+  package_type                   = "Image"
+  image_uri                      = "${aws_ecr_repository.lambda["cleaning"].repository_url}:${var.image_tag}"
+  timeout                        = 180
+  memory_size                    = 256
+  reserved_concurrent_executions = 1
 
   vpc_config {
     subnet_ids          = data.aws_subnets.public.ids
@@ -492,15 +503,20 @@ resource "aws_lambda_function" "cleaning" {
       DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
   }
+
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
 }
 
 resource "aws_lambda_function" "determine_notification" {
-  function_name = "${var.cohort}-${var.project_name}-${var.environment}-lambda-determine-notification"
-  role          = aws_iam_role.lambda_determine_notification.arn
-  package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.lambda["determine-notification"].repository_url}:${var.image_tag}"
-  timeout       = 60
-  memory_size   = 128
+  function_name                  = "${var.cohort}-${var.project_name}-${var.environment}-lambda-determine-notification"
+  role                           = aws_iam_role.lambda_determine_notification.arn
+  package_type                   = "Image"
+  image_uri                      = "${aws_ecr_repository.lambda["determine-notification"].repository_url}:${var.image_tag}"
+  timeout                        = 60
+  memory_size                    = 128
+  reserved_concurrent_executions = 1
 
   vpc_config {
     subnet_ids          = data.aws_subnets.public.ids
@@ -517,6 +533,10 @@ resource "aws_lambda_function" "determine_notification" {
       ENVIRONMENT   = var.environment
       DB_SECRET_ARN = aws_secretsmanager_secret.rds_connection.arn
     }
+  }
+
+  lifecycle {
+    ignore_changes = [image_uri]
   }
 }
 
