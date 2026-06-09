@@ -108,3 +108,15 @@ variable "ses_identity_arn" {
 	type        = string
 	default     = "arn:aws:ses:eu-west-2:129033205317:identity/trainee.tom.king@sigmalabs.co.uk"
 }
+
+variable "app_base_url" {
+  description = "The public base URL of the deployed Streamlit dashboard."
+  type        = string
+  default     = "http://localhost:8501"
+}
+
+variable "ses_from_email" {
+  description = "Email address to send verification emails from (must be SES-verified)."
+  type        = string
+  default     = "thomasking987@gmail.com"
+}

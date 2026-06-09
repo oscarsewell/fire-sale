@@ -13,7 +13,7 @@ COPY awd_it_logo.png .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY form.py auth.py ses_email.py style_components.py app.py database.py discord_link.py tracked_products.py .
 
 EXPOSE 8501
 

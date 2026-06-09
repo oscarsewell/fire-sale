@@ -37,3 +37,8 @@ output "rds_connection_secret_arn" {
   description = "ARN of the RDS connection details secret."
   value       = aws_secretsmanager_secret.rds_connection.arn
 }
+
+output "dashboard_base_url" {
+  description = "Base URL injected into the dashboard container for verification email links."
+  value       = var.app_base_url
+}
