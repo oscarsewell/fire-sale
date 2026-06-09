@@ -106,6 +106,14 @@ resource "aws_sfn_state_machine" "main" {
                   FunctionName = aws_lambda_function.scraper[name].arn
                   "Payload.$"  = "$.tracked.Payload.body"
                 }
+                Retry = [
+                  {
+                    ErrorEquals      = ["States.ALL"]
+                    IntervalSeconds  = 10
+                    MaxAttempts      = 10
+                    BackoffRate      = 2.0
+                  }
+                ]
                 End = true
               }
             }
