@@ -4,13 +4,23 @@ from datetime import datetime
 import plotly.graph_objects as go
 import streamlit as st
 from babel.numbers import get_currency_symbol
-from style_components import render_header, header_spacing, metric_style
-from database import get_tracked_products, remove_tracked_product, get_price_history, update_tracked_product_target_price
+
+from style_components import (
+    render_page_header,
+    header_spacing,
+    metric_style,
+)
+from database import (
+    get_tracked_products,
+    remove_tracked_product,
+    get_price_history,
+    update_tracked_product_target_price
+)
 
 
 def render_tracked_products() -> None:
     """Render the tracked products page for authenticated users."""
-    render_header()
+    render_page_header()
     header_spacing()
     metric_style()
     st.title(":blue[Your Tracked Products]",
@@ -83,12 +93,12 @@ def render_tracked_products() -> None:
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             # Action buttons row
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                if st.button("Untrack", key=f"untrack_{product['product_id']}", type="primary", use_container_width=True):
+                if st.button("Untrack", key=f"untrack_{product['product_id']}", type="primary", width="stretch"):
                     try:
                         remove_tracked_product(user_id, product["product_id"])
                         st.rerun()
@@ -102,7 +112,7 @@ def render_tracked_products() -> None:
                 if edit_key not in st.session_state:
                     st.session_state[edit_key] = False
 
-                if st.button("Edit Target Price", key=f"btn_edit_{product['product_id']}", use_container_width=True):
+                if st.button("Edit Target Price", key=f"btn_edit_{product['product_id']}", type="primary", width="stretch"):
                     st.session_state[edit_key] = not st.session_state[edit_key]
                     st.rerun()
 
@@ -118,10 +128,10 @@ def render_tracked_products() -> None:
                     submit_cols = st.columns(2)
                     with submit_cols[0]:
                         submitted = st.form_submit_button(
-                            "Update", use_container_width=True, type="primary")
+                            "Update", width="stretch")
                     with submit_cols[1]:
                         cancel = st.form_submit_button(
-                            "Cancel", use_container_width=True)
+                            "Cancel", width="stretch")
 
                     if submitted:
                         try:

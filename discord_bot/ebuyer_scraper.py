@@ -3,17 +3,39 @@
 
 import json
 import logging
+import os
 import re
 from datetime import datetime
-from curl_cffi import requests
 from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
+
+try:
+    from curl_cffi import requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    import requests
+    HAS_CURL_CFFI = False
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 log = logging.getLogger(__name__)
+
+BRIGHTDATA_HOST = os.environ.get("BRIGHTDATA_HOST", "")
+BRIGHTDATA_PORT = os.environ.get("BRIGHTDATA_PORT", "")
+BRIGHTDATA_USERNAME = os.environ.get("BRIGHTDATA_USERNAME", "")
+BRIGHTDATA_PASSWORD = os.environ.get("BRIGHTDATA_PASSWORD", "")
+
+
+def get_proxy_dict() -> dict:
+    """Build proxy dictionary from Bright Data credentials."""
+    if not all([BRIGHTDATA_HOST, BRIGHTDATA_PORT, BRIGHTDATA_USERNAME, BRIGHTDATA_PASSWORD]):
+        log.warning("Proxy not configured - missing environment variables...")
+        return None
+    proxy_url = f"http://{BRIGHTDATA_USERNAME}:{BRIGHTDATA_PASSWORD}@{BRIGHTDATA_HOST}:{BRIGHTDATA_PORT}"
+    log.info("Proxy configured: %s:%s", BRIGHTDATA_HOST, BRIGHTDATA_PORT)
+    return {'http': proxy_url, 'https': proxy_url}
 
 
 def fetch_html_content(url: str) -> str:
@@ -22,7 +44,11 @@ def fetch_html_content(url: str) -> str:
         raise TypeError("URL must be a string.")
 
     try:
-        response = requests.get(url, impersonate="chrome", timeout=10)
+        proxies = get_proxy_dict()
+        if proxies:
+            log.info("Using Bright Data ISP proxy for request to %s", url)
+        response = requests.get(url, impersonate="chrome",
+                                timeout=30, proxies=proxies)
         if response.status_code == 404:
             log.warning("Page not found (404 Error): %s", url)
             return None
