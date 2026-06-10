@@ -36,10 +36,10 @@ def render_discord_link_page():
                 st.error("Could not generate a Discord link code. Please try again later.")
             return
 
-        st.success("Discord link code generated!")
-        st.code(link_code["code"])
-
-        st.info(
-            "This code expires in 15 minutes. "
-            "Go to Discord and run `/link <code>` using this code."
-        )
+            st.success("Discord link code generated!")
+            st.code(link_code["code"])
+    
+            st.info(
+                "This code expires in 15 minutes. "
+                "Go to Discord and run `/link <code>` using this code."
+            )
