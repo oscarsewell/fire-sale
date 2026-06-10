@@ -6,7 +6,7 @@ from discord.ext import tasks
 from discord import app_commands
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, update_tracking_target_price, link_discord_account
+from bot_db import get_or_create_product, add_tracking, get_tracked_products, remove_tracking, get_user_by_discord_id, update_tracking_target_price, link_discord_account, get_tracked_product
 from scraper_router import full_scrape_product
 from sqs_notifications import receive_discord_notifications, delete_discord_notification, parse_notification_message
 
@@ -247,25 +247,83 @@ async def untrack(
     """Responds to /untrack to stop tracking a product"""
     await interaction.response.defer(ephemeral=True)
 
-    try:
-        was_removed = remove_tracking(interaction.user.id, product_id)
+    product = get_tracked_product(interaction.user.id, product_id)
 
-        if not was_removed:
-            await interaction.followup.send(
-                "Couldn't find that product in your tracked list.\nPlease check the product ID and try again.",
-                ephemeral=True
-            )
-            return
-
+    if product is None:
         await interaction.followup.send(
-            f"Stopped tracking product ID {product_id}.",
+            "Couldn't find that product in your tracked list.\n"
+            "Please check the product ID and try again.",
             ephemeral=True
         )
+        return
 
-    except Exception as e:
-        await interaction.followup.send(
-            f"Something went wrong trying to untrack that product: {e}", ephemeral=True
+    view = discord.ui.View(timeout=120)
+
+    confirm_button = discord.ui.Button(
+        label="Confirm Untrack",
+        style=discord.ButtonStyle.green,
+    )
+
+    cancel_button = discord.ui.Button(
+        label="Cancel",
+        style=discord.ButtonStyle.red,
+    )
+
+    async def confirm_callback(button_interaction):
+        try:
+            was_removed = remove_tracking(interaction.user.id, product_id)
+
+            if not was_removed:
+                await button_interaction.response.edit_message(
+                    "Couldn't untrack this product.\n"
+                    "It may already be untracked\n",
+                    view=None,
+                    ephemeral=True
+                )
+                return
+
+            await button_interaction.response.edit_message(
+                content=(
+                    "Product untracked.\n\n"
+                    f"Product: {product['product_name']}\n"
+                    f"Website: {product['site_name']}\n"
+                    f"URL: {product['product_url']}\n"
+                ),
+                view=None,
+            )
+
+        except Exception as error:
+            await button_interaction.response.edit_message(
+                content=(
+                    "Sorry, there was an error trying to untrack that product. "
+                    "Please try again later.\n\n"
+                    f"Error details: {error}"
+                ),
+                view=None,
+            )
+
+    async def cancel_callback(button_interaction):
+        await button_interaction.response.edit_message(
+            content="Untrack cancelled.",
+            view=None,
         )
+
+    confirm_button.callback = confirm_callback
+    cancel_button.callback = cancel_callback
+
+    view.add_item(confirm_button)
+    view.add_item(cancel_button)
+
+    await interaction.followup.send(
+        f"You're about to stop tracking the following product:\n\n"
+        f"Product: {product['product_name']}\n"
+        f"Website: {product['site_name']}\n"
+        f"Original Price: £{product['original_price']/100:.2f}\n"
+        f"Target Price: £{product['target_price']/100:.2f}\n"
+        f"URL: {product['product_url']}",
+        view=view,
+        ephemeral=True,
+    )
 
 
 @tree.command(name="status", description="Check whether your Discord account is linked")
@@ -351,27 +409,84 @@ async def edit(interaction: discord.Interaction, product_id: int, new_target_pri
         )
         return
 
-    try:
-        new_target_price_pence = int(round(new_target_price * 100))
-        was_updated = update_tracking_target_price(
-            interaction.user.id, product_id, new_target_price_pence)
+    product = get_tracked_product(interaction.user.id, product_id)
 
-        if not was_updated:
-            await interaction.followup.send(
-                "Couldn't find that product in your tracked list.\nPlease check the product ID and try again.",
-                ephemeral=True
-            )
-            return
-
+    if product is None:
         await interaction.followup.send(
-            f"Updated target price for product ID {product_id} to £{new_target_price:.2f}.",
+            "Couldn't find that product in your tracked list.\n"
+            "Please check the product ID and try again.",
             ephemeral=True
         )
+        return
 
-    except Exception as error:
-        await interaction.followup.send(
-            f"Something went wrong trying to update that product: {error}", ephemeral=True
+    new_target_price_pence = int(round(new_target_price * 100))
+
+    view = discord.ui.View(timeout=120)
+
+    confirm_button = discord.ui.Button(
+        label="Confirm Edit",
+        style=discord.ButtonStyle.green,
+    )
+
+    cancel_button = discord.ui.Button(
+        label="Cancel",
+        style=discord.ButtonStyle.red,
+    )
+
+    async def confirm_callback(button_interaction):
+
+        try:
+            was_updated = update_tracking_target_price(
+                interaction.user.id, product_id, new_target_price_pence)
+
+            if not was_updated:
+                await interaction.followup.send(
+                    "Couldn't update this product.\n"
+                    "Please check this product is still tracked and try again.",
+                    ephemeral=True
+                )
+                return
+
+            await button_interaction.response.edit_message(
+                content=(
+                    "Target price updated!\n\n"
+                    f"Product: {product['product_name']}\n"
+                    f"Website: {product['site_name']}\n"
+                    f"New Target Price: £{new_target_price:.2f}\n"
+                    f"URL: {product['product_url']}\n"
+                ),
+                view=None,
+            )
+
+        except Exception as error:
+            await interaction.followup.send(
+                f"Something went wrong trying to update that product: {error}",
+                view=None,
+                ephemeral=True
+            )
+
+    async def cancel_callback(button_interaction):
+        await button_interaction.response.edit_message(
+            content="Edit cancelled.",
+            view=None,
         )
+
+    confirm_button.callback = confirm_callback
+    cancel_button.callback = cancel_callback
+
+    view.add_item(confirm_button)
+    view.add_item(cancel_button)
+
+    await interaction.followup.send(
+        f"You're about to update the target price for the following product:\n\n"
+        f"Product: {product['product_name']}\n"
+        f"Website: {product['site_name']}\n"
+        f"Current Target Price: £{product['target_price']/100:.2f}\n"
+        f"New Target Price: £{new_target_price:.2f}\n"
+        f"URL: {product['product_url']}",
+        view=view,
+        ephemeral=True,
+    )
 
 
 async def send_discord_dm(discord_user_id, message):
