@@ -112,6 +112,21 @@ data "aws_iam_policy_document" "ecs_dashboard_task" {
       resources = [statement.value]
     }
   }
+
+  statement {
+    sid    = "AllowSendingEmailFromApprovedIdentities"
+    effect = "Allow"
+
+    resources = [var.ses_identity_arn]
+
+  statement {
+    sid    = "AllowDescribeNetworkInterfacesForPublicIp"
+    effect = "Allow"
+
+    actions = ["ec2:DescribeNetworkInterfaces"]
+
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "ecs_dashboard_task" {
@@ -224,7 +239,12 @@ resource "aws_ecs_task_definition" "dashboard" {
     }
 
     environment = [
-      { name = "ENVIRONMENT", value = var.environment }
+      { name = "ENVIRONMENT",   value = var.environment },
+      { name = "AWS_REGION",    value = var.aws_region },
+      { name = "SES_FROM_EMAIL", value = var.ses_from_email },
+      { name = "DB_SECRET_ARN", value = aws_db_instance.main.master_user_secret[0].secret_arn },
+      { name = "DB_HOST",       value = aws_db_instance.main.address },
+      { name = "DB_NAME",       value = var.rds_db_name },
     ]
   }])
 }

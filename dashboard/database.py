@@ -57,12 +57,22 @@ def get_db_credentials() -> dict:
         raise
     credentials = json.loads(response["SecretString"])
     logger.debug("DB credentials loaded from Secrets Manager")
+    # RDS managed secrets only guarantee 'username' and 'password'.
+    # Fall back to env vars for any fields the secret omits.
+    resolved_host = credentials.get("host") or os.getenv("DB_HOST")
+    resolved_port = credentials.get("port") or os.getenv("DB_PORT", "5432")
+    resolved_dbname = credentials.get("dbname") or os.getenv("DB_NAME", "firesale")
+    if not resolved_host:
+        raise ValueError(
+            "DB host not found in secret or DB_HOST env var. "
+            "Set DB_HOST in the task environment."
+        )
     return {
-        "host": credentials["host"],
-        "port": int(credentials.get("port", 5432)),
+        "host": resolved_host,
+        "port": int(resolved_port),
         "username": credentials["username"],
         "password": credentials["password"],
-        "dbname": credentials["dbname"],
+        "dbname": resolved_dbname,
     }
 
 
