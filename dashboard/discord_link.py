@@ -2,17 +2,24 @@
 
 import streamlit as st
 from database import generate_discord_link_code
-from style_components import render_header
+from style_components import (
+    render_page_header,
+    blue_button_style,
+    header_spacing,
+    page_title
+)
 
 
 def render_discord_link_page():
     """Render page for generating a Discord linking code."""
-    render_header()
+    render_page_header()
+    header_spacing()
     user = st.session_state.user
-    st.title("Connect Discord")
-    st.write(
+    page_title("Connect Discord")
+    st.markdown(
         "Generate a temporary code, then use it in Discord with "
-        "`/link <code>` to connect your account."
+        "`/link <code>` to connect your account.",
+        text_alignment="center"
     )
 
     if user.get("discord"):
@@ -20,11 +27,13 @@ def render_discord_link_page():
         st.write(f"Discord ID: `{user['discord']}`")
         return
 
-    if st.button("Generate Discord link code", use_container_width=True):
-        try:
-            link_code = generate_discord_link_code(user["id"])
-        except Exception:
-            st.error("Could not generate a Discord link code. Please try again later.")
+    blue_button_style("discord_link")
+    with st.container(key="discord_link"):
+        if st.button("Generate Discord link code", width="stretch"):
+            try:
+                link_code = generate_discord_link_code(user["id"])
+            except Exception:
+                st.error("Could not generate a Discord link code. Please try again later.")
             return
 
         st.success("Discord link code generated!")

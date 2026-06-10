@@ -22,18 +22,19 @@ BORDER_WIDTH = "2px"
 BORDER_RADIUS = "10px"
 
 
-def render_header() -> None:
-    """Render the app header with logo and title."""
+def render_page_header() -> None:
+    """Render the app header for pages once logged in."""
     left, center, right = st.columns([1, 2, 1])
-
     with center:
-        image, product_name = st.columns([0.2, 0.7], gap=None)
-        with image:
-            add_image("hardware_hound_logo_cropped.png", width=120)
-        with product_name:
-            st.header(":orange[Hardware Hound]", width="content")
-    
+        add_image("hardware_hound_page.png", width=450)
     st.divider()
+
+
+def render_login_header() -> None:
+    """Render the app header for login and register pages."""
+    left, center, right = st.columns([1, 2, 1])
+    with center:
+        add_image("hardware_hound_main.png", width=400)
 
 
 def _apply_css(css: str) -> None:
@@ -67,21 +68,26 @@ def header_spacing() -> None:
     _apply_css(css)
 
 
-def signup_button_style() -> None:
-    """Style the redirect action buttons to be centered and customized."""
-    css = """
+def blue_button_style(container_key: str = None) -> None:
+    """Defines the style for a blue button."""
+    if container_key:
+        selector = f"div.st-key-{container_key} div.stButton"
+    else:
+        selector = "div.stButton"
+
+    css = f"""
     <style>
-    div.stButton {
+    {selector} {{
         display: flex;
         justify-content: center;
-    }
-    div.stButton button {
+    }}
+    {selector} button {{
         background-color: #0066cc;
         color: white;
         border-radius: 10px;
         padding: 10px;
         width: 95%;
-    }
+    }}
     </style>
     """
     _apply_css(css)
