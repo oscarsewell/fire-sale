@@ -9,7 +9,7 @@ fi
 
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${account_number}.dkr.ecr.eu-west-2.amazonaws.com
 
-docker buildx build -f dashboard/Dockerfile -t c23-fire-sale-prod-dashboard:latest --provenance=false --platform="linux/amd64" .
+docker buildx build -t c23-fire-sale-prod-dashboard:latest --provenance=false --platform="linux/amd64" .
 
 docker tag c23-fire-sale-prod-dashboard:latest ${account_number}.dkr.ecr.eu-west-2.amazonaws.com/c23-fire-sale-prod-dashboard:latest
 
