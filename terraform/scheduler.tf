@@ -47,7 +47,7 @@ resource "aws_scheduler_schedule" "main" {
     mode = "OFF"
   }
 
-  schedule_expression = "rate(2 minutes)"
+  schedule_expression = "rate(30 minutes)"
 
   target {
     arn      = aws_sfn_state_machine.main.arn

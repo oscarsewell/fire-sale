@@ -2,6 +2,7 @@
 """A script to scrape price and product data from the HTML content on a website."""
 
 import logging
+import os
 from datetime import datetime
 
 try:
@@ -25,6 +26,27 @@ BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
+# Bright Data ISP Proxy configuration from environment variables
+BRIGHTDATA_HOST = os.environ.get("BRIGHTDATA_HOST", "")
+BRIGHTDATA_PORT = os.environ.get("BRIGHTDATA_PORT", "")
+BRIGHTDATA_USERNAME = os.environ.get("BRIGHTDATA_USERNAME", "")
+BRIGHTDATA_PASSWORD = os.environ.get("BRIGHTDATA_PASSWORD", "")
+
+
+def _get_proxy_dict() -> dict:
+    """Builds proxy configuration dictionary from environment variables."""
+    if not all([BRIGHTDATA_HOST, BRIGHTDATA_PORT, BRIGHTDATA_USERNAME, BRIGHTDATA_PASSWORD]):
+        log.warning("Proxy not configured - missing environment variables. Host=%s Port=%s User=%s",
+                    bool(BRIGHTDATA_HOST), bool(BRIGHTDATA_PORT), bool(BRIGHTDATA_USERNAME))
+        return None
+
+    proxy_url = f"http://{BRIGHTDATA_USERNAME}:{BRIGHTDATA_PASSWORD}@{BRIGHTDATA_HOST}:{BRIGHTDATA_PORT}"
+    log.info("Proxy configured: %s:%s", BRIGHTDATA_HOST, BRIGHTDATA_PORT)
+    return {
+        'http': proxy_url,
+        'https': proxy_url
+    }
+
 
 def fetch_html_content(url: str) -> str:
     """Fetches the HTML content for a given product."""
@@ -32,11 +54,18 @@ def fetch_html_content(url: str) -> str:
         raise TypeError("URL must be a string.")
 
     try:
+        proxies = _get_proxy_dict()
+        use_proxy = proxies is not None
+
+        if use_proxy:
+            log.info("Using Bright Data ISP proxy for request to %s", url)
+
         if HAS_CURL_CFFI:
-            response = curl_requests.get(url, impersonate="chrome", timeout=10)
+            response = curl_requests.get(
+                url, impersonate="chrome", timeout=30, proxies=proxies)
         else:
             response = curl_requests.get(
-                url, headers=BROWSER_HEADERS, timeout=10)
+                url, headers=BROWSER_HEADERS, timeout=30, proxies=proxies)
         if response.status_code == 404:
             log.warning("Page not found (404 Error): %s", url)
             return None

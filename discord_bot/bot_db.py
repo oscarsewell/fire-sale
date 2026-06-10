@@ -251,3 +251,42 @@ def link_discord_account(code, discord_user_id):
         "email": user_row[2],
         "discord": user_row[3],
     }
+
+
+def get_tracked_product(discord_user_id, product_id):
+    """Fetch a specific tracked product for a user"""
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    p.id,
+                    p.product_name,
+                    p.product_url,
+                    sn.site,
+                    p.currency,
+                    tp.target_price,
+                    tp.original_price
+                FROM tracked_products tp
+                JOIN users u ON tp.user_id = u.id
+                JOIN products p ON tp.product_id = p.id
+                JOIN site_names sn ON p.site_id = sn.id
+                WHERE u.discord = %s
+                AND p.id = %s
+                """,
+                (str(discord_user_id), product_id),
+            )
+            row = cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "product_id": row[0],
+        "product_name": row[1],
+        "product_url": row[2],
+        "site_name": row[3],
+        "currency": row[4],
+        "target_price": row[5],
+        "original_price": row[6],
+    }
