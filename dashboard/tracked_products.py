@@ -93,7 +93,7 @@ def render_tracked_products() -> None:
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             # Action buttons row
             btn_col1, btn_col2 = st.columns(2)
