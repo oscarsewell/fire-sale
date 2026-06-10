@@ -154,7 +154,6 @@ def render_register() -> None:
                 result = register_user(
                     username.strip(), email.strip().lower(), password
                 )
-                base_url = os.getenv("APP_BASE_URL", "http://localhost:8501")
                 email_sent = send_verification_email(
                     to_email=email.strip().lower(),
                     username=username.strip(),
