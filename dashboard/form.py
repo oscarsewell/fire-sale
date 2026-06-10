@@ -100,7 +100,7 @@ def display_product_info(product: dict) -> None:
     with st.container(border=True):
         st.subheader(":blue[Product Information]", text_alignment="center")
         for key, value in product.items():
-            if key in {"scraped_at", "page_exists", "currency_code"}:
+            if key in {"scraped_at", "page_exists", "currency_code", "url"}:
                 continue
 
             st.markdown(
