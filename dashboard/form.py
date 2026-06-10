@@ -100,6 +100,9 @@ def display_product_info(product: dict) -> None:
     with st.container(border=True):
         st.subheader(":blue[Product Information]", text_alignment="center")
         for key, value in product.items():
+            if key in {"scraped_at", "page_exists", "currency_code"}:
+                continue
+
             st.markdown(
                 f'<div style="background-color: #E8F8FD; padding: 15px; border-radius: 8px; margin-bottom: 10px;">'
                 f'<p style="font-weight: bold; margin: 0;">{key.replace("_", " ").title()}</p>'
