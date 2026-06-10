@@ -48,7 +48,10 @@ def get_task_public_ip() -> str | None:
                             return public_ip
         except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Could not resolve public IP via ECS metadata/EC2: %s", exc)
+                "Could not resolve public IP via ECS metadata/EC2: %s", exc
+            )
+    else:
+        return None
 
     # Fallback: external IP-reflection service (works as long as outbound access exists)
     try:
@@ -81,6 +84,11 @@ def send_verification_email(
         public_ip = get_task_public_ip()
         if public_ip:
             base_url = f"http://{public_ip}:8501"
+            logger.warning(
+                "APP_BASE_URL not set; using ECS task public IP (%s) for verification links. "
+                "Set APP_BASE_URL to a stable hostname to avoid broken links after task replacement.",
+                public_ip,
+            )
         else:
             base_url = "http://localhost:8501"
             logger.warning(

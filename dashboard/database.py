@@ -60,7 +60,7 @@ def get_db_credentials() -> dict:
     # RDS managed secrets only guarantee 'username' and 'password'.
     # Fall back to env vars for any fields the secret omits.
     resolved_host = credentials.get("host") or os.getenv("DB_HOST")
-    resolved_port = credentials.get("port") or os.getenv("DB_PORT", 5432)
+    resolved_port = credentials.get("port") or os.getenv("DB_PORT", "5432")
     resolved_dbname = credentials.get("dbname") or os.getenv("DB_NAME", "firesale")
     if not resolved_host:
         raise ValueError(

@@ -117,13 +117,7 @@ data "aws_iam_policy_document" "ecs_dashboard_task" {
     sid    = "AllowSendingEmailFromApprovedIdentities"
     effect = "Allow"
 
-    actions = [
-      "ses:SendEmail",
-      "ses:SendRawEmail",
-    ]
-
-    resources = ["*"]
-  }
+    resources = [var.ses_identity_arn]
 
   statement {
     sid    = "AllowDescribeNetworkInterfacesForPublicIp"
