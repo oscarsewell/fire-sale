@@ -536,6 +536,7 @@ async def jingle(interaction: discord.Interaction):
         jingle_dir / "tom-jingle.ogg",
         jingle_dir / "zei-jingle.ogg",
         jingle_dir / "oscar-jingle.ogg",
+        jingle_dir / "carolina-jingle.ogg",
     ]
 
     selected_audio = random.choice(audio_files)
