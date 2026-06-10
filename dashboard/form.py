@@ -1,17 +1,18 @@
 """Script which builds a Streamlit dashboard with a submission form page."""
 
-from style_components import (
-    render_header,
-    page_title,
-    header_spacing
-)
-from database import upsert_product, add_tracked_product
 import logging
 import re
 import os
 import importlib.util
 import sys
 import streamlit as st
+
+from database import upsert_product, add_tracked_product
+from style_components import (
+    render_page_header,
+    page_title,
+    header_spacing
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def target_price_input_field() -> int:
 
 def submit_button() -> bool:
     """Creates a submit button for the form."""
-    return st.form_submit_button("Track", type="primary", use_container_width=True)
+    return st.form_submit_button("Track", type="primary", width="stretch")
 
 
 def validate_submission(url: str, target_price: int) -> dict:
@@ -99,6 +100,9 @@ def display_product_info(product: dict) -> None:
     with st.container(border=True):
         st.subheader(":blue[Product Information]", text_alignment="center")
         for key, value in product.items():
+            if key in {"scraped_at", "page_exists", "currency_code", "url"}:
+                continue
+
             st.markdown(
                 f'<div style="background-color: #E8F8FD; padding: 15px; border-radius: 8px; margin-bottom: 10px;">'
                 f'<p style="font-weight: bold; margin: 0;">{key.replace("_", " ").title()}</p>'
@@ -121,7 +125,7 @@ def submission_outcome(url: str, target_price: int, user_id: int) -> None:
 def form(user_id: int) -> None:
     """Builds the form for adding a new product to track."""
     with st.form("tracking_form"):
-        st.subheader("Submission form", text_alignment="center")
+        st.subheader(":blue[Submission form]", text_alignment="center")
         st.markdown("")
 
         url = url_input_field()
@@ -137,7 +141,7 @@ def form(user_id: int) -> None:
 
 def form_page() -> None:
     """Builds the complete form page of the dashboard."""
-    render_header()
+    render_page_header()
     header_spacing()
 
     page_title("Add a new product to track")

@@ -12,9 +12,10 @@ from database import get_tracked_products
 from discord_link import render_discord_link_page
 from tracked_products import render_tracked_products
 from style_components import (
-    signup_button_style,
+    blue_button_style,
     add_image,
-    render_header,
+    render_page_header,
+    render_login_header,
     header_spacing,
     metric_style,
     supported_websites_container
@@ -88,11 +89,7 @@ def _show_flash() -> None:
 # ── Page: Login ───────────────────────────────────────────────────────────────
 def render_login() -> None:
     """Render the login page."""
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        add_image("hardware_hound_logo_cropped.png", width=250)
-        st.title(":orange[Hardware Hound]")
-
+    render_login_header()
     st.subheader(":blue[Log in to your account]", text_alignment="center")
     _show_flash()
 
@@ -100,7 +97,7 @@ def render_login() -> None:
         email = st.text_input("Email address")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button(
-            "Log in", use_container_width=True, type="primary")
+            "Log in", width="stretch", type="primary")
 
     if submitted:
         if not email or not password:
@@ -122,19 +119,15 @@ def render_login() -> None:
                 logger.error("Unhandled error on login for %s: %s", email, e)
                 st.error(
                     "Unable to connect to the database. Please try again later.")
-    signup_button_style()
-    if st.button("Don't have an account? Sign up", use_container_width=True):
+    blue_button_style()
+    if st.button("Don't have an account? Sign up", width="stretch"):
         _go("register")
 
 
 # ── Page: Register ────────────────────────────────────────────────────────────
 def render_register() -> None:
     """Render the registration page."""
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        add_image("hardware_hound_logo_cropped.png", width=250)
-        st.title(":orange[Hardware Hound]")
-
+    render_login_header()
     st.subheader(":blue[Create a new account]", text_alignment="center")
     _show_flash()
 
@@ -146,7 +139,7 @@ def render_register() -> None:
         )
         confirm = st.text_input("Confirm password", type="password")
         submitted = st.form_submit_button(
-            "Create account", use_container_width=True, type="primary"
+            "Create account", width="stretch", type="primary"
         )
 
     if submitted:
@@ -185,8 +178,8 @@ def render_register() -> None:
                 logger.error(
                     "Unhandled error during registration for %s: %s", email, e)
                 st.error("Could not create your account. Please try again later.")
-    signup_button_style()
-    if st.button("Already have an account? Log in", use_container_width=True):
+    blue_button_style()
+    if st.button("Already have an account? Log in", width="stretch"):
         _go("login")
 
 
@@ -195,7 +188,7 @@ def render_home() -> None:
     """Render the home page for authenticated users."""
     user = st.session_state.user
 
-    render_header()
+    render_page_header()
     header_spacing()
     metric_style()
     st.title(
@@ -244,22 +237,24 @@ def render_sidebar() -> None:
         st.caption(user["email"])
         st.divider()
 
-        if st.button("Home", use_container_width=True, type="primary"):
+        if st.button("Home", width="stretch", type="primary"):
             _go("home")
-        if st.button("Add Product", use_container_width=True, type="primary"):
+        if st.button("Add Product", width="stretch", type="primary"):
             _go("add_product")
-        if st.button("Tracked Products", use_container_width=True, type="primary"):
+        if st.button("Tracked Products", width="stretch", type="primary"):
             _go("tracked_products")
-        if st.button("Connect Discord", use_container_width=True):
+        if st.button("Connect Discord", width="stretch", type="primary"):
             _go("connect_discord")
 
         st.divider()
-        if st.button("Log out", use_container_width=True):
-            logger.info("User logged out: user_id=%s", user["id"])
-            st.session_state.user = None
-            st.session_state.page = "login"
-            st.session_state.pop("token_processed", None)
-            st.rerun()
+        blue_button_style("logout")
+        with st.container(key="logout"):
+            if st.button("Log out", width="stretch"):
+                logger.info("User logged out: user_id=%s", user["id"])
+                st.session_state.user = None
+                st.session_state.page = "login"
+                st.session_state.pop("token_processed", None)
+                st.rerun()
 
 
 # ── Router ────────────────────────────────────────────────────────────────────

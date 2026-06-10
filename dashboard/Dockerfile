@@ -6,13 +6,10 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 COPY requirements.txt .
-COPY hardware_hound_logo_cropped.png .
-COPY overclockers_logo.jpg .
-COPY ebuyer_logo.png .
-COPY awd_it_logo.png .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY cleaning/ cleaning/
+COPY full_scraping/ full_scraping/
 COPY form.py auth.py ses_email.py style_components.py app.py database.py discord_link.py tracked_products.py .
 COPY .streamlit/config.toml .streamlit/config.toml
 
