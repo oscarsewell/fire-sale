@@ -34,7 +34,7 @@ def render_discord_link_page():
                 link_code = generate_discord_link_code(user["id"])
             except Exception:
                 st.error("Could not generate a Discord link code. Please try again later.")
-            return
+                return
 
             st.success("Discord link code generated!")
             st.code(link_code["code"])
