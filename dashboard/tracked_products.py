@@ -9,7 +9,6 @@ from style_components import (
     render_page_header,
     header_spacing,
     metric_style,
-    blue_button_style
 )
 from database import (
     get_tracked_products,
