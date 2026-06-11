@@ -117,7 +117,10 @@ data "aws_iam_policy_document" "ecs_dashboard_task" {
     sid    = "AllowSendingEmailFromApprovedIdentities"
     effect = "Allow"
 
+    actions = ["ses:SendEmail", "ses:SendRawEmail"]
+
     resources = [var.ses_identity_arn]
+  }
 
   statement {
     sid    = "AllowDescribeNetworkInterfacesForPublicIp"
@@ -245,6 +248,10 @@ resource "aws_ecs_task_definition" "dashboard" {
       { name = "DB_SECRET_ARN", value = aws_db_instance.main.master_user_secret[0].secret_arn },
       { name = "DB_HOST",       value = aws_db_instance.main.address },
       { name = "DB_NAME",       value = var.rds_db_name },
+      { name = "BRIGHTDATA_HOST", value = var.brightdata_proxy_host },
+      { name = "BRIGHTDATA_PORT", value = var.brightdata_proxy_port },
+      { name = "BRIGHTDATA_USERNAME", value = var.brightdata_proxy_username },
+      { name = "BRIGHTDATA_PASSWORD", value = var.brightdata_proxy_password },
     ]
   }])
 }
