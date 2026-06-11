@@ -546,4 +546,18 @@ async def jingle(interaction: discord.Interaction):
         file=discord.File(selected_audio),
     )
 
+
+@tree.command(name="bark", description="Hear the Hardware Hound bark")
+async def bark(interaction: discord.Interaction):
+    """Send a barking audio clip"""
+
+    bark_dir = Path(__file__).parent / "bark"
+
+    hound_bark = bark_dir / "bark.ogg"
+
+    await interaction.response.send_message(
+        "🐶 Hardware Hound says...",
+        file=discord.File(hound_bark),
+    )
+
 client.run(TOKEN)
