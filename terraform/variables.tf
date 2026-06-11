@@ -106,7 +106,7 @@ variable "discord_bot_rds_db_user_arn" {
 variable "ses_identity_arn" {
 	description = "SES verified identity ARN used as the email sender."
 	type        = string
-	default     = "arn:aws:ses:eu-west-2:129033205317:identity/trainee.tom.king@sigmalabs.co.uk"
+	default     = "arn:aws:ses:eu-west-2:129033205317:identity/thomasking987@gmail.com"
 }
 
 variable "app_base_url" {
