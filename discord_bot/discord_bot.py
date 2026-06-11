@@ -2,6 +2,8 @@
 import os
 import discord
 import asyncio
+import random
+from pathlib import Path
 from discord.ext import tasks
 from discord import app_commands
 from dotenv import load_dotenv
@@ -522,5 +524,26 @@ async def discord_notification_loop():
 
         except Exception as error:
             print(f"Error processing SQS message: {error}")
+
+
+@tree.command(name="jingle", description="Receive a random Hardware Hound jingle")
+async def jingle(interaction: discord.Interaction):
+    """Send a random audio clip."""
+
+    jingle_dir = Path(__file__).parent / "jingles"
+
+    audio_files = [
+        jingle_dir / "tom-jingle.ogg",
+        jingle_dir / "zei-jingle.ogg",
+        jingle_dir / "oscar-jingle.ogg",
+        jingle_dir / "carolina-jingle.ogg",
+    ]
+
+    selected_audio = random.choice(audio_files)
+
+    await interaction.response.send_message(
+        "🐶 Hardware Hound says...",
+        file=discord.File(selected_audio),
+    )
 
 client.run(TOKEN)
