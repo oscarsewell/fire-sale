@@ -22,22 +22,23 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 
-# Bright Data ISP Proxy configuration from environment variables
-BRIGHTDATA_HOST = os.environ.get("BRIGHTDATA_HOST", "")
-BRIGHTDATA_PORT = os.environ.get("BRIGHTDATA_PORT", "")
-BRIGHTDATA_USERNAME = os.environ.get("BRIGHTDATA_USERNAME", "")
-BRIGHTDATA_PASSWORD = os.environ.get("BRIGHTDATA_PASSWORD", "")
-
 
 def get_proxy_dict() -> dict:
     """Builds proxy configuration dictionary from environment variables."""
-    if not all([BRIGHTDATA_HOST, BRIGHTDATA_PORT, BRIGHTDATA_USERNAME, BRIGHTDATA_PASSWORD]):
+    # Read environment variables at runtime, not at module import time
+    brightdata_host = os.environ.get("BRIGHTDATA_HOST", "")
+    brightdata_port = os.environ.get("BRIGHTDATA_PORT", "")
+    brightdata_username = os.environ.get("BRIGHTDATA_USERNAME", "")
+    brightdata_password = os.environ.get("BRIGHTDATA_PASSWORD", "")
+
+    if not all([brightdata_host, brightdata_port, brightdata_username, brightdata_password]):
         log.warning("Proxy not configured - missing environment variables. Host=%s Port=%s User=%s",
-                    bool(BRIGHTDATA_HOST), bool(BRIGHTDATA_PORT), bool(BRIGHTDATA_USERNAME))
+                    bool(brightdata_host), bool(brightdata_port), bool(brightdata_username))
         return None
 
-    proxy_url = f"http://{BRIGHTDATA_USERNAME}:{BRIGHTDATA_PASSWORD}@{BRIGHTDATA_HOST}:{BRIGHTDATA_PORT}"
-    log.info("Proxy configured: %s:%s", BRIGHTDATA_HOST, BRIGHTDATA_PORT)
+    proxy_url = f"http://{brightdata_username}:{brightdata_password}@{brightdata_host}:{brightdata_port}"
+    log.info("Proxy configured: %s:%s using library: %s", brightdata_host, brightdata_port,
+             "curl_cffi" if HAS_CURL_CFFI else "requests")
     return {
         'http': proxy_url,
         'https': proxy_url

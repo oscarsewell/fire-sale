@@ -119,6 +119,8 @@ variable "ses_from_email" {
   description = "Email address to send verification emails from (must be SES-verified)."
   type        = string
   default     = "thomasking987@gmail.com"
+}
+
 # ── Bright Data ISP Proxy Configuration ───────────────────────────────────────
 
 variable "brightdata_proxy_host" {
